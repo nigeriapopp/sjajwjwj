@@ -48,12 +48,38 @@ what Vapor set, and tips for that exact phone.
 - *Exynos 2200 (Europe and others)* → Samsung's own Vulkan driver, since Turnip doesn't support Xclipse GPUs.
 - Tips shown in Phone Check for heat, case removal, and Game Booster.
 
-**Performance settings** (Settings → Performance):
+**Smart Controls** — pick up a controller and the touch controls disappear; touch the screen and they come back.
+The touch that brings them back doesn't press anything, so grabbing the phone never fires a shot. If you turn
+controls on or off yourself from the game menu, Vapor leaves your choice alone for that session.
+
+**Ghost controls** — touch controls fade to a faint outline after 4 seconds untouched so you can see the game,
+and snap back the moment you touch.
+
+**Controller notices** — "Xbox controller connected · Player 1 · 80% battery", disconnect notices, and a warning
+when a controller's battery drops below 15%.
+
+**In-game menu** — one-tap 30 / 40 / 45 / 60 FPS buttons under the FPS limiter.
+
+**After each game** — a one-line recap: play time, average FPS, 1% low FPS, battery temperature.
+
+**Fallout 3 / Fallout 3 GOTY / New Vegas** — the many-core startup crash fix (`bUseThreadedAI=1`,
+`iNumHWThreads=2`) is applied automatically.
+
+**First launches** — a notice that early shader stutter is normal, plus one short tip in each of your first 3 sessions.
+
+**Settings → Performance** (grouped into Your phone · Controls · In game):
 - **Default FPS cap** — 30 / 40 / 45 / 60 / 90 / 120 for games you haven't tweaked.
+- **Smart controls** and **Ghost controls** on/off.
+- **Heat step-down** (off by default) — drops to 45 FPS when the phone overheats (30 if critical) and restores your cap when it cools.
+- **Do Not Disturb while playing** (off by default).
+- **Play-time reminders** (off by default) — a notice every hour.
 - **Stable FPS mode** — Android sustained-performance mode: slightly lower peak, much less throttling in long sessions.
 - **Lock screen to max refresh rate** — stops 120 Hz screens dropping their refresh rate mid-game.
 - **Respect Battery Saver** — games start at 30 FPS when Battery Saver or Game Booster's battery mode is on.
-- **Heat and battery warnings** — a notice when the phone overheats or the battery drops below 15%.
+- **Heat and battery warnings** — a notice when the phone overheats, the battery drops below 15%, or memory is low at launch.
+- **Phone Check** has a Share button.
+
+**True-black AMOLED theme** — Settings → Interface → theme "Dark + AMOLED" now really uses black backgrounds.
 
 **Android Game Mode** — Vapor registers with Android's Game Dashboard and Samsung Game Booster, so their
 Performance / Battery modes show up and Vapor follows them.
