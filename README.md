@@ -48,6 +48,28 @@ what Vapor set, and tips for that exact phone.
 - *Exynos 2200 (Europe and others)* → Samsung's own Vulkan driver, since Turnip doesn't support Xclipse GPUs.
 - Tips shown in Phone Check for heat, case removal, and Game Booster.
 
+**Fast Launch** — upstream rewrote about 170 MB of graphics files (GPU wrapper, a 112 MB library bundle, zink DLLs,
+DXVK) on *every* launch. Vapor reuses them when nothing changed and checks the key files are still there.
+If a game closes within 40 seconds (a likely crash) the next launch does a full unpack automatically, and
+Settings → Performance → **Repair game files** forces one. Also: GPU detection is cached in memory instead of
+re-creating a Vulkan instance per check, the GPU shader cache is 2 GB instead of 512 MB (fewer recompiles,
+shorter loading screens), and high-end phones use the fastest download tier.
+
+**Save snapshots** — game menu → **Saves**: *Save now* copies the game's save folders (Documents, AppData,
+Saved Games, skipping caches) into a slot. Tap a slot → *Load this save*: your current saves are backed up,
+the game closes, and the snapshot is put back right before you press Play again. There's also a one-tap
+**Quick save** button on the menu's side rail. Keeps the newest 12 snapshots per game.
+(Windows games under Wine can't be frozen mid-frame like console emulators, so these are save-file snapshots.)
+
+**Deluxe game menu** — the game's title in a gradient with clock and battery chips, a springy slide-in,
+tabs that glide into each other, and the game dims behind the menu (except on tabs that preview the picture).
+
+**Minecraft: Java Edition** — side menu → *Minecraft: Java Edition*. Vapor sets you up with an official
+open-source Java Edition launcher (Zalith Launcher 2 recommended, or Amethyst — their Microsoft sign-in is
+approved), launches it in one tap, and walks you through sign-in, Fabric, performance mods (Sodium, Lithium,
+FerriteCore or the Fabulously Optimized pack) and memory / render distance / resolution / FPS tuned for your
+phone. You need to own Java Edition.
+
 **Smart Controls** — pick up a controller and the touch controls disappear; touch the screen and they come back.
 The touch that brings them back doesn't press anything, so grabbing the phone never fires a shot. If you turn
 controls on or off yourself from the game menu, Vapor leaves your choice alone for that session.
