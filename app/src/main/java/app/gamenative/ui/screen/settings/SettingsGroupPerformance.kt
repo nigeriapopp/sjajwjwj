@@ -111,6 +111,18 @@ fun SettingsGroupPerformance() {
             },
         )
 
+        var heatStepDown by rememberSaveable { mutableStateOf(VaporSettings.heatStepDown) }
+        SettingsSwitch(
+            colors = settingsTileColorsAlt(),
+            state = heatStepDown,
+            title = { Text(stringResource(R.string.vapor_heat_step_title)) },
+            subtitle = { Text(stringResource(R.string.vapor_heat_step_subtitle)) },
+            onCheckedChange = {
+                heatStepDown = it
+                VaporSettings.heatStepDown = it
+            },
+        )
+
         var sustained by rememberSaveable { mutableStateOf(VaporSettings.sustainedPerformance) }
         SettingsSwitch(
             colors = settingsTileColorsAlt(),

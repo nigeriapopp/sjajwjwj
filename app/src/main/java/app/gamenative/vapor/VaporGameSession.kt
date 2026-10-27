@@ -82,6 +82,8 @@ class VaporGameSession private constructor(private val activity: Activity) {
     private fun onThermalStatus(status: Int) {
         // Warn once per level, only for SEVERE (3) and up.
         if (status < PowerManager.THERMAL_STATUS_SEVERE || status <= lastThermalWarned) return
+        // Heat Step-Down posts its own notice when it lowers the cap.
+        if (VaporSettings.heatStepDown) return
         lastThermalWarned = status
         val msg = if (status >= PowerManager.THERMAL_STATUS_CRITICAL) {
             "Phone is very hot — Android is slowing it down. Lower the FPS cap or take a break."

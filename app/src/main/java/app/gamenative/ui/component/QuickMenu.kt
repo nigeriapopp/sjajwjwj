@@ -1509,6 +1509,24 @@ private fun PerformanceHudQuickMenuTab(
                     },
                     accentColor = accentColor,
                 )
+                // Vapor: one-tap FPS caps.
+                Spacer(modifier = Modifier.height(6.dp))
+                Row(
+                    modifier = Modifier
+                        .padding(horizontal = 8.dp)
+                        .then(if (LocalImmersiveInputBypass.current.active) Modifier.focusGroup() else Modifier),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    app.gamenative.vapor.VaporFps.quickCaps(fpsLimiterMax).forEach { cap ->
+                        QuickMenuChoiceChip(
+                            text = cap.toString(),
+                            selected = fpsLimiterTarget == cap,
+                            accentColor = accentColor,
+                            onClick = { onFpsLimiterChanged(cap) },
+                            modifier = Modifier.width(56.dp),
+                        )
+                    }
+                }
             }
         }
 

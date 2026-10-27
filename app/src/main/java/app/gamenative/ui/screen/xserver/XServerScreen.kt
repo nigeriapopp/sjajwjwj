@@ -788,6 +788,16 @@ fun XServerScreen(
         }
     }
 
+    // Vapor Heat Step-Down (opt-in): temporary lower cap while the phone is hot.
+    DisposableEffect(container.id) {
+        val heat = app.gamenative.vapor.HeatStepDown.attachIfEnabled(
+            context = context,
+            userCap = { effectiveFpsLimit() },
+            apply = { cap -> applyFpsLimiterToEngines(cap ?: effectiveFpsLimit()) },
+        )
+        onDispose { heat?.detach() }
+    }
+
     fun applyLsfgMultiplier(mult: Int) {
         lsfgMultiplier = LsfgQuickMenuHelper.sanitizeMultiplier(mult)
         applyLsfgSettings()

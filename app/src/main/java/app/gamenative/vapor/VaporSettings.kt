@@ -80,6 +80,11 @@ object VaporSettings {
         get() = p()?.getBoolean("ghost_controls", true) ?: true
         set(v) { p()?.edit()?.putBoolean("ghost_controls", v)?.apply() }
 
+    /** Lower the FPS cap a step when the phone overheats, restore it when cool. */
+    var heatStepDown: Boolean
+        get() = p()?.getBoolean("heat_step_down", false) ?: false
+        set(v) { p()?.edit()?.putBoolean("heat_step_down", v)?.apply() }
+
     var tierName: String
         get() = p()?.getString(KEY_TIER, "") ?: ""
         set(v) { p()?.edit()?.putString(KEY_TIER, v)?.apply() }
