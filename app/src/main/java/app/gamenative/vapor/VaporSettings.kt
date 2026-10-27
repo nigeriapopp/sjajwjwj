@@ -121,4 +121,38 @@ object VaporSettings {
     var tierName: String
         get() = p()?.getString(KEY_TIER, "") ?: ""
         set(v) { p()?.edit()?.putString(KEY_TIER, v)?.apply() }
+
+    /** Look for a newer Vapor build on GitHub when the app opens. */
+    var autoUpdateCheck: Boolean
+        get() = p()?.getBoolean("auto_update_check", true) ?: true
+        set(v) { p()?.edit()?.putBoolean("auto_update_check", v)?.apply() }
+
+    /** Version code the player chose to skip. */
+    var skippedUpdate: Int
+        get() = p()?.getInt("skipped_update", 0) ?: 0
+        set(v) { p()?.edit()?.putInt("skipped_update", v)?.apply() }
+
+    /** Convert each game's graphics settings to phone-friendly values on its first launch. */
+    var phonePresets: Boolean
+        get() = p()?.getBoolean("phone_presets", true) ?: true
+        set(v) { p()?.edit()?.putBoolean("phone_presets", v)?.apply() }
+
+    fun presetsApplied(gameKey: String): Boolean = p()?.getBoolean("presets_$gameKey", false) ?: true
+
+    fun markPresetsApplied(gameKey: String) {
+        p()?.edit()?.putBoolean("presets_$gameKey", true)?.apply()
+    }
+
+    /** Clears every per-game preset marker so presets apply again on each game's next launch. */
+    fun resetPresets() {
+        val prefs = p() ?: return
+        val e = prefs.edit()
+        prefs.all.keys.filter { it.startsWith("presets_") }.forEach { e.remove(it) }
+        e.apply()
+    }
+
+    /** Keep a rolling automatic save backup after each session. */
+    var autoSaveBackup: Boolean
+        get() = p()?.getBoolean("auto_save_backup", true) ?: true
+        set(v) { p()?.edit()?.putBoolean("auto_save_backup", v)?.apply() }
 }

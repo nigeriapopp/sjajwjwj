@@ -15,6 +15,8 @@ object MinecraftHub {
         val packageName: String,
         val downloadUrl: String,
         val blurb: String,
+        /** GitHub "owner/name" to download the APK from inside Vapor. */
+        val repo: String = "",
     )
 
     val ZALITH = Launcher(
@@ -22,6 +24,7 @@ object MinecraftHub {
         packageName = "com.movtery.zalithlauncher.v2",
         downloadUrl = "https://github.com/ZalithLauncher/ZalithLauncher2/releases/latest",
         blurb = "Modern look, built-in Modrinth & CurseForge mod browser, Java 8–25. Recommended.",
+        repo = "ZalithLauncher/ZalithLauncher2",
     )
 
     val AMETHYST = Launcher(
@@ -29,6 +32,7 @@ object MinecraftHub {
         packageName = "org.angelauramc.amethyst",
         downloadUrl = "https://github.com/AngelAuraMC/Amethyst-Android/releases/latest",
         blurb = "The official PojavLauncher successor. Fabric/Forge support, very compatible.",
+        repo = "AngelAuraMC/Amethyst-Android",
     )
 
     /** Older launchers that also work if the player already has one. */

@@ -15,6 +15,8 @@ performance features on top. All credit for the emulation stack goes to those pr
 1. Open this repo's **Releases** page on your phone and download the newest `Vapor-….apk`.
 2. Tap the file and allow "Install unknown apps" for your browser when Android asks.
 3. If you already have **GameNative** installed, uninstall it first — Vapor uses the same internal app ID.
+   From version 1.5.0 on, new Vapor versions install **over** the old one (Vapor offers them itself), so your games and logins stay.
+   Older builds (1.4.0) each had their own signing key: uninstall one of those once before installing 1.5.0.
 4. Open Vapor, sign in to Steam (QR code or username + password + Steam Guard).
 5. Pick a game → **Install** → wait for the download → **Play**.
 
@@ -61,6 +63,22 @@ the game closes, and the snapshot is put back right before you press Play again.
 **Quick save** button on the menu's side rail. Keeps the newest 12 snapshots per game.
 (Windows games under Wine can't be frozen mid-frame like console emulators, so these are save-file snapshots.)
 
+**Phone graphics presets** — on a game's first launch Vapor converts its graphics settings to what your phone
+runs well: Unreal Engine 4/5 games get scalability levels, render scale and an FPS limit picked for your phone's class
+(shadows, foliage and effects drop first, textures stay higher); Bethesda games (Oblivion, Fallout 3/NV/4, Skyrim) get
+smaller shadow maps and no MSAA or depth of field. After that your own in-game changes are kept.
+Settings → Performance → Graphics & saves.
+
+**Save safety** — before every launch Vapor makes sure the Windows save folders (Documents, My Games, Saved Games,
+AppData Local/LocalLow/Roaming) exist and are writable, so games don't fail to save. After each session it keeps an
+automatic backup of changed saves (newest 3, under game menu → Saves).
+
+**Crash Guard** — when a game closes with an error, Vapor saves the game and Wine log and repairs the game files on the
+next launch. Settings → Performance → **Share last game crash log** sends it so the problem can be found.
+
+**Updates** — Vapor checks this repo's Releases when it opens and offers a one-tap update that installs over the
+current app (Settings → Performance → Check for updates).
+
 **Deluxe game menu** — the game's title in a gradient with clock and battery chips, a springy slide-in,
 tabs that glide into each other, and the game dims behind the menu (except on tabs that preview the picture).
 
@@ -68,7 +86,8 @@ tabs that glide into each other, and the game dims behind the menu (except on ta
 open-source Java Edition launcher (Zalith Launcher 2 recommended, or Amethyst — their Microsoft sign-in is
 approved), launches it in one tap, and walks you through sign-in, Fabric, performance mods (Sodium, Lithium,
 FerriteCore or the Fabulously Optimized pack) and memory / render distance / resolution / FPS tuned for your
-phone. You need to own Java Edition.
+phone. Tap **Install** and Vapor downloads the launcher from its official GitHub release and opens Android's installer.
+You need to own Java Edition.
 
 **Smart Controls** — pick up a controller and the touch controls disappear; touch the screen and they come back.
 The touch that brings them back doesn't press anything, so grabbing the phone never fires a shot. If you turn
@@ -142,9 +161,10 @@ turn on **Stable FPS mode**, use Game Booster's performance profile, and take th
 
 Every push builds an APK with GitHub Actions (`.github/workflows/build-apk.yml`) and publishes it as a Release.
 
-To keep the same signing key across builds (so new versions install as updates instead of needing a reinstall),
-add a repository secret `VAPOR_SIGNING_KEY_B64` containing a base64-encoded Android `debug.keystore`
-(alias `androiddebugkey`, passwords `android`). Without it, each build gets a fresh key.
+Every build is signed with the same key so new versions install as updates. CI takes the key from the repository
+secret `VAPOR_SIGNING_KEY_B64` (base64 Android keystore, alias `androiddebugkey`, passwords `android`) if set;
+otherwise it creates one once and keeps it in this repo's private Actions cache. GitHub drops caches unused for
+7 days, so for a key that never changes, add the secret. The version code is 1000 + the CI run number.
 
 Local build: Android Studio, JDK 17, then `./gradlew :app:bundleLegacyRelease`.
 

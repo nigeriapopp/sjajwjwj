@@ -482,6 +482,9 @@ fun PluviaMain(
         }
     }
 
+    // Vapor: offer newer Vapor builds from GitHub Releases (installs over the current app).
+    app.gamenative.ui.component.VaporUpdatePrompt()
+
     // Check for updates on app start
     LaunchedEffect(Unit) {
         // Vapor: upstream's updater would offer GameNative builds signed with a different key.

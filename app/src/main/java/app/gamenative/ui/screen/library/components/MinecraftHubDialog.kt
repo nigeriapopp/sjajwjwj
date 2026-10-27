@@ -32,11 +32,16 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicatorButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -58,6 +63,11 @@ import app.gamenative.ui.util.SnackbarManager
 import app.gamenative.vapor.MinecraftGuide
 import app.gamenative.vapor.MinecraftHub
 import app.gamenative.vapor.VaporAutoTune
+import app.gamenative.vapor.VaporUpdater
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import kotlinx.coroutines.launch
 
 /** Vapor's Minecraft: Java Edition hub. */
 @Composable
@@ -66,6 +76,46 @@ fun MinecraftHubDialog(onDismiss: () -> Unit) {
     val uri = LocalUriHandler.current
     var refresh by remember { mutableIntStateOf(0) }
     val installed = remember(refresh) { MinecraftHub.installed(context) }
+    val scope = rememberCoroutineScope()
+    val progress = remember { mutableStateMapOf<String, Float>() }
+    // Coming back from Android's installer: look for the launcher again.
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    DisposableEffect(lifecycle) {
+        val obs = LifecycleEventObserver { _, e -> if (e == Lifecycle.Event.ON_RESUME) refresh++ }
+        lifecycle.addObserver(obs)
+        onDispose { lifecycle.removeObserver(obs) }
+    }
+    fun install(launcher: MinecraftHub.Launcher) {
+        if (launcher.repo.isEmpty() || progress.containsKey(launcher.packageName)) {
+            uri.openUri(launcher.downloadUrl)
+            return
+        }
+        progress[launcher.packageName] = 0f
+        scope.launch {
+            val asset = VaporUpdater.latestApkUrl(launcher.repo)
+            if (asset == null) {
+                progress.remove(launcher.packageName)
+                uri.openUri(launcher.downloadUrl)
+                SnackbarManager.show("Download the .apk under Assets, install it, then come back here")
+                return@launch
+            }
+            val result = VaporUpdater.downloadAndInstall(
+                context,
+                asset.first,
+                launcher.packageName + ".apk",
+                selfUpdate = false,
+            ) { p -> progress[launcher.packageName] = p }
+            progress.remove(launcher.packageName)
+            when (result) {
+                VaporUpdater.Result.NeedsPermission -> {
+                    SnackbarManager.show("Allow Vapor to install apps, then tap Install again")
+                    VaporUpdater.openInstallPermission(context)
+                }
+                is VaporUpdater.Result.Failed -> SnackbarManager.show(result.reason)
+                else -> {}
+            }
+        }
+    }
     val tuning = remember {
         val profile = VaporAutoTune.profile(context)
         MinecraftGuide.tuningFor(profile.snapshot.totalRamMb, profile.tier)
@@ -141,7 +191,7 @@ fun MinecraftHubDialog(onDismiss: () -> Unit) {
                         }
                     } else {
                         Text(
-                            "You need a free launcher app to run Java Edition. Pick one:",
+                            "You need a free launcher app to run Java Edition. Tap Install: Vapor downloads it and opens Android's installer.",
                             style = MaterialTheme.typography.bodyMedium,
                         )
                     }
@@ -152,10 +202,8 @@ fun MinecraftHubDialog(onDismiss: () -> Unit) {
                             LauncherCard(
                                 launcher = launcher,
                                 accent = if (launcher == MinecraftHub.ZALITH) grass else PluviaTheme.colors.accentPurple,
-                                onGet = {
-                                    uri.openUri(launcher.downloadUrl)
-                                    SnackbarManager.show("Download the .apk under Assets, install it, then come back here")
-                                },
+                                progress = progress[launcher.packageName],
+                                onGet = { install(launcher) },
                             )
                         }
 
@@ -208,13 +256,17 @@ private fun BigButton(text: String, icon: @Composable () -> Unit, brush: Brush, 
 }
 
 @Composable
-private fun LauncherCard(launcher: MinecraftHub.Launcher, accent: Color, onGet: () -> Unit) {
-    Row(
+private fun LauncherCard(launcher: MinecraftHub.Launcher, accent: Color, progress: Float?, onGet: () -> Unit) {
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
-            .border(1.dp, accent.copy(alpha = 0.4f), RoundedCornerShape(16.dp))
+            .border(1.dp, accent.copy(alpha = 0.4f), RoundedCornerShape(16.dp)),
+    ) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
             .padding(14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -233,9 +285,21 @@ private fun LauncherCard(launcher: MinecraftHub.Launcher, accent: Color, onGet: 
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Filled.Download, null, tint = Color.Black, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(4.dp))
-                Text("Get", color = Color.Black, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
+                Text(
+                    if (progress == null) "Install" else "${(progress * 100).toInt()}%",
+                    color = Color.Black,
+                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                )
             }
         }
+    }
+    AnimatedVisibility(visible = progress != null) {
+        LinearProgressIndicator(
+            progress = { (progress ?: 0f).coerceIn(0f, 1f) },
+            color = accent,
+            modifier = Modifier.fillMaxWidth().height(4.dp),
+        )
+    }
     }
 }
 

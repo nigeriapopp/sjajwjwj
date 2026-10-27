@@ -4469,6 +4469,17 @@ private fun setupXEnvironment(
         } catch (e: Exception) {
             Timber.tag("GameFixes").w(e, "Game fixes failed before launch")
         }
+        // Vapor: save folders exist and are writable; phone graphics presets on a game's first launch.
+        try {
+            app.gamenative.vapor.LaunchPrep.run(
+                context,
+                appId,
+                container.rootDir,
+                GameFixesRegistry.installDirFor(context, appId, container),
+            )
+        } catch (e: Exception) {
+            Timber.w(e, "[Vapor] launch prep failed")
+        }
         try {
             SteamInstallScriptRegistry.applyForLaunch(container, appId)
         } catch (e: Exception) {
@@ -4691,6 +4702,11 @@ private fun setupXEnvironment(
         }
         if (status != 0) {
             Timber.e("Guest program terminated with status: $status")
+            // Vapor Crash Guard: keep the log for sharing and do a full file repair on the next launch.
+            app.gamenative.vapor.VaporSettings.repairPending = true
+            Thread {
+                app.gamenative.vapor.GameCrashLog.capture(context, ContainerUtils.resolveGameName(appId), status)
+            }.start()
             onGameLaunchError?.invoke("Game terminated with error status: $status")
         }
         PluviaApp.events.emit(AndroidEvent.GuestProgramTerminated)
@@ -5452,6 +5468,14 @@ private fun exit(
     // Vapor: quick recap of how the session ran, and self-healing for Fast Launch.
     runCatching { app.gamenative.vapor.SessionSummary.show(exitProperties) }
     runCatching { app.gamenative.vapor.VaporFastLaunch.onSessionEnded() }
+    // Vapor: rolling save backup once Wine has shut down (skipped when no save changed).
+    if (app.gamenative.vapor.VaporSettings.autoSaveBackup) {
+        val vaporRoot = container.rootDir
+        CoroutineScope(Dispatchers.IO).launch {
+            kotlinx.coroutines.delay(8_000L)
+            runCatching { app.gamenative.vapor.SaveSnapshots.autoBackup(vaporRoot) }
+        }
+    }
     runCatching { windowActivity.stop() }
 
     // Store session data in container metadata

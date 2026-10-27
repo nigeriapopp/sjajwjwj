@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
 import app.gamenative.PrefManager
 import app.gamenative.R
 import app.gamenative.ui.theme.settingsTileColors
@@ -121,6 +122,88 @@ fun SettingsGroupPerformance() {
             onClick = {
                 VaporSettings.repairPending = true
                 app.gamenative.ui.util.SnackbarManager.show(context.getString(R.string.vapor_repair_done))
+            },
+        )
+    }
+
+    SettingsGroup(title = { Text(stringResource(R.string.vapor_group_saves_graphics)) }) {
+        var presets by rememberSaveable { mutableStateOf(VaporSettings.phonePresets) }
+        SettingsSwitch(
+            colors = settingsTileColorsAlt(),
+            state = presets,
+            title = { Text(stringResource(R.string.vapor_presets_title)) },
+            subtitle = { Text(stringResource(R.string.vapor_presets_subtitle)) },
+            onCheckedChange = {
+                presets = it
+                VaporSettings.phonePresets = it
+            },
+        )
+        SettingsMenuLink(
+            colors = settingsTileColors(),
+            title = { Text(stringResource(R.string.vapor_presets_reset_title)) },
+            subtitle = { Text(stringResource(R.string.vapor_presets_reset_subtitle)) },
+            onClick = {
+                VaporSettings.resetPresets()
+                app.gamenative.ui.util.SnackbarManager.show(context.getString(R.string.vapor_presets_reset_done))
+            },
+        )
+        var autoSave by rememberSaveable { mutableStateOf(VaporSettings.autoSaveBackup) }
+        SettingsSwitch(
+            colors = settingsTileColorsAlt(),
+            state = autoSave,
+            title = { Text(stringResource(R.string.vapor_autosave_title)) },
+            subtitle = { Text(stringResource(R.string.vapor_autosave_subtitle)) },
+            onCheckedChange = {
+                autoSave = it
+                VaporSettings.autoSaveBackup = it
+            },
+        )
+    }
+
+    SettingsGroup(title = { Text(stringResource(R.string.vapor_group_updates)) }) {
+        val scope = androidx.compose.runtime.rememberCoroutineScope()
+        var release by remember { mutableStateOf<app.gamenative.vapor.VaporRelease?>(null) }
+        var checking by remember { mutableStateOf(false) }
+        val installed = remember { context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "?" }
+        release?.let { r -> app.gamenative.ui.component.VaporUpdateDialog(r, onDismiss = { release = null }) }
+        SettingsMenuLink(
+            colors = settingsTileColors(),
+            title = { Text(stringResource(R.string.vapor_update_check_title)) },
+            subtitle = { Text(stringResource(R.string.vapor_update_check_subtitle, installed)) },
+            onClick = {
+                if (checking) return@SettingsMenuLink
+                checking = true
+                scope.launch {
+                    val latest = app.gamenative.vapor.VaporUpdater.checkLatest()
+                    checking = false
+                    when {
+                        latest == null -> app.gamenative.ui.util.SnackbarManager.show(context.getString(R.string.vapor_update_offline))
+                        app.gamenative.vapor.VaporUpdates.isNewer(latest, app.gamenative.vapor.VaporUpdater.installedVersionCode(context)) ->
+                            release = latest
+                        else -> app.gamenative.ui.util.SnackbarManager.show(context.getString(R.string.vapor_update_none))
+                    }
+                }
+            },
+        )
+        var autoUpdate by rememberSaveable { mutableStateOf(VaporSettings.autoUpdateCheck) }
+        SettingsSwitch(
+            colors = settingsTileColorsAlt(),
+            state = autoUpdate,
+            title = { Text(stringResource(R.string.vapor_update_auto_title)) },
+            subtitle = { Text(stringResource(R.string.vapor_update_auto_subtitle)) },
+            onCheckedChange = {
+                autoUpdate = it
+                VaporSettings.autoUpdateCheck = it
+            },
+        )
+        SettingsMenuLink(
+            colors = settingsTileColors(),
+            title = { Text(stringResource(R.string.vapor_crash_log_title)) },
+            subtitle = { Text(stringResource(R.string.vapor_crash_log_subtitle)) },
+            onClick = {
+                if (!app.gamenative.vapor.GameCrashLog.share(context)) {
+                    app.gamenative.ui.util.SnackbarManager.show(context.getString(R.string.vapor_crash_log_none))
+                }
             },
         )
     }

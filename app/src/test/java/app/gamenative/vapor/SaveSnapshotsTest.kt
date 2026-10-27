@@ -81,4 +81,19 @@ class SaveSnapshotsTest {
         val snap = SaveSnapshots.create(root, "x", 5L)!!
         assertFalse(File(snap.dir, "Saved Games").exists())
     }
+
+    @Test
+    fun autoBackupSkipsUnchangedSavesAndKeepsThree() {
+        val root = container()
+        val save = File(SaveSnapshots.userDir(root), "Documents/My Games/Fallout3/Saves/Save 1.fos")
+        save.setLastModified(1_000L)
+        File(SaveSnapshots.userDir(root), "AppData/Local/Game/settings.ini").setLastModified(1_000L)
+        assertNotNull(SaveSnapshots.autoBackup(root, 2_000L))
+        assertNull(SaveSnapshots.autoBackup(root, 3_000L))
+        for (t in 4..8) {
+            save.setLastModified(t * 1_000L + 500L)
+            assertNotNull(SaveSnapshots.autoBackup(root, t * 1_000L + 900L))
+        }
+        assertEquals(SaveSnapshots.MAX_AUTO, SaveSnapshots.list(root).count { it.label == SaveSnapshots.AUTO_LABEL })
+    }
 }

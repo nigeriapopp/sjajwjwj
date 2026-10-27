@@ -85,6 +85,13 @@ object GameFixesRegistry {
         fix.apply(context, catalogId, installPath, installPathWindows, container)
     }
 
+    /** Install folder of a game on the phone, or null if unknown or missing. */
+    fun installDirFor(context: Context, appId: String, container: Container): File? {
+        val source = ContainerUtils.extractGameSourceFromContainerId(appId)
+        val gameId = ContainerUtils.extractGameIdFromContainerId(appId)?.toString() ?: return null
+        return resolvePaths(context, source, gameId, appId, container)?.first?.let { File(it) }
+    }
+
     private fun resolvePaths(
         context: Context,
         source: GameSource,

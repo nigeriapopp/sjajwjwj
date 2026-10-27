@@ -64,8 +64,10 @@ android {
         buildConfigField("boolean", "XR_BUILD", "false")
         buildConfigField("boolean", "MODERN_XR", "false")
 
-        versionCode = 24
-        versionName = "1.4.0-vapor1"
+        // Vapor: CI passes -PvaporBuild=<run number> so every release installs as an update over the last one.
+        val vaporBuild = (project.findProperty("vaporBuild") as String?)?.toIntOrNull()
+        versionCode = if (vaporBuild != null) 1000 + vaporBuild else 24
+        versionName = if (vaporBuild != null) "1.5.0-vapor.$vaporBuild" else "1.5.0-vapor"
 
         buildConfigField("boolean", "GOLD", "false")
         fun secret(name: String) =

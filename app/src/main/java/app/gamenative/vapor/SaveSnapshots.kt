@@ -136,11 +136,55 @@ object SaveSnapshots {
         return if (restore(containerRoot, snap)) snap else null
     }
 
-    /** Keeps the newest [MAX_SNAPSHOTS]; automatic "Before loading" backups go first. */
+    const val AUTO_LABEL = "Auto backup"
+    const val MAX_AUTO = 3
+
+    /**
+     * Rolling backup after a play session: skipped when no save file changed since the last one,
+     * keeps the newest [MAX_AUTO].
+     */
+    fun autoBackup(containerRoot: File, now: Long = System.currentTimeMillis()): Snapshot? {
+        val lastAuto = list(containerRoot).firstOrNull { it.label == AUTO_LABEL }
+        if (lastAuto != null && latestSaveChange(containerRoot) <= lastAuto.createdAt) return null
+        val snap = create(containerRoot, AUTO_LABEL, now) ?: return null
+        list(containerRoot).filter { it.label == AUTO_LABEL }.drop(MAX_AUTO).forEach { delete(it) }
+        return snap
+    }
+
+    /** Newest modification time of any file in the save folders (0 when there are none). */
+    fun latestSaveChange(containerRoot: File): Long {
+        val source = userDir(containerRoot)
+        var newest = 0L
+        fun walk(dir: File, depth: Int) {
+            if (depth > 12) return
+            val children = dir.listFiles() ?: return
+            for (c in children) {
+                if (java.nio.file.Files.isSymbolicLink(c.toPath())) continue
+                if (c.isDirectory) {
+                    if (c.name.lowercase() !in SKIP_DIRS) walk(c, depth + 1)
+                } else if (c.lastModified() > newest) {
+                    newest = c.lastModified()
+                }
+            }
+        }
+        val profile = runCatching { source.canonicalFile }.getOrNull() ?: return 0L
+        for (folder in SAVE_FOLDERS) {
+            val f = File(source, folder)
+            if (!f.isDirectory) continue
+            val real = f.canonicalFile
+            if (profile.path.startsWith(real.path + File.separator) || profile == real) continue
+            walk(f, 0)
+        }
+        return newest
+    }
+
+    /** Keeps the newest [MAX_SNAPSHOTS]; automatic backups go first. */
     private fun prune(containerRoot: File) {
         val all = list(containerRoot)
         if (all.size <= MAX_SNAPSHOTS) return
-        val removable = all.sortedWith(compareBy<Snapshot>({ it.label != "Before loading" }, { it.createdAt }))
+        val removable = all.sortedWith(
+            compareBy<Snapshot>({ it.label != "Before loading" && it.label != AUTO_LABEL }, { it.createdAt }),
+        )
         removable.take(all.size - MAX_SNAPSHOTS).forEach { delete(it) }
     }
 

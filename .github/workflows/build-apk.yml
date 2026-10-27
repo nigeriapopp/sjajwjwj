@@ -42,24 +42,43 @@ jobs:
           yes | "$SDKM" --licenses > /dev/null || true
           "$SDKM" --install "build-tools;34.0.0" > /dev/null
 
-      # Optional: add a repo secret VAPOR_SIGNING_KEY_B64 (base64 of an Android debug.keystore,
-      # passwords "android") so every build is signed with the same key and installs as an update.
+      # The same signing key on every build lets a new APK install as an update over the old one.
+      # Source, in order: repo secret VAPOR_SIGNING_KEY_B64 (base64 debug.keystore, passwords "android"),
+      # else this repo's private Actions cache, else a new key that is then saved to the cache.
+      - name: Restore signing key
+        id: keycache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.vapor-key
+          key: vapor-signing-key-v1
+
       - name: Signing key
+        id: key
         env:
           KEY_B64: ${{ secrets.VAPOR_SIGNING_KEY_B64 }}
         run: |
-          mkdir -p ~/.android
+          mkdir -p ~/.android ~/.vapor-key
           if [ -n "$KEY_B64" ]; then
             echo "$KEY_B64" | base64 -d > ~/.android/debug.keystore
             echo "Using signing key from repo secret"
+          elif [ -f ~/.vapor-key/debug.keystore ]; then
+            cp ~/.vapor-key/debug.keystore ~/.android/debug.keystore
+            echo "Using saved signing key"
           else
-            echo "No VAPOR_SIGNING_KEY_B64 secret: using a fresh key for this build"
-          fi
-          if [ ! -f ~/.android/debug.keystore ]; then
-            keytool -genkeypair -keystore ~/.android/debug.keystore -alias androiddebugkey \
+            keytool -genkeypair -keystore ~/.vapor-key/debug.keystore -alias androiddebugkey \
               -storepass android -keypass android -keyalg RSA -keysize 2048 -validity 10000 \
-              -dname "CN=Android Debug,O=Android,C=US"
+              -dname "CN=Vapor,O=Vapor,C=US"
+            cp ~/.vapor-key/debug.keystore ~/.android/debug.keystore
+            echo "generated=true" >> "$GITHUB_OUTPUT"
+            echo "Created a new signing key"
           fi
+
+      - name: Save signing key
+        if: steps.key.outputs.generated == 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.vapor-key
+          key: vapor-signing-key-v1
 
       # No analytics keys: the secrets plugin copies values verbatim into BuildConfig,
       # and without them the app's own fallback ("" key) keeps analytics off.
@@ -67,7 +86,7 @@ jobs:
         run: echo "sdk.dir=$ANDROID_HOME" > local.properties
 
       - name: Build app bundle
-        run: ./gradlew :app:bundleLegacyRelease
+        run: ./gradlew :app:bundleLegacyRelease -PvaporBuild=${{ github.run_number }}
 
       - name: Make universal APK (includes the Ubuntu runtime module)
         id: apk
@@ -77,13 +96,12 @@ jobs:
             --bundle=app/build/outputs/bundle/legacyRelease/app-legacy-release.aab \
             --output=vapor.apks --mode=universal
           unzip -o vapor.apks universal.apk
-          # AGP created ~/.android/debug.keystore during the build if the secret wasn't set.
           "$ANDROID_HOME/build-tools/34.0.0/apksigner" sign \
             --ks ~/.android/debug.keystore --ks-key-alias androiddebugkey \
             --ks-pass pass:android --key-pass pass:android \
             --out universal-signed.apk universal.apk
           mkdir -p out
-          VERSION=$(grep -m1 'versionName = ' app/build.gradle.kts | sed -E 's/.*"(.*)".*/\1/')
+          VERSION="1.5.0-vapor.${{ github.run_number }}"
           mv universal-signed.apk "out/Vapor-${VERSION}.apk"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           ls -la out
@@ -98,7 +116,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TAG="vapor-${{ steps.apk.outputs.version }}-build${{ github.run_number }}"
+          TAG="vapor-build${{ github.run_number }}"
           gh release create "$TAG" out/*.apk \
             --target "${{ github.sha }}" \
             --title "Vapor ${{ steps.apk.outputs.version }} (build ${{ github.run_number }})" \

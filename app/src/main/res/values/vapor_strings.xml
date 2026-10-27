@@ -39,4 +39,22 @@
     <string name="vapor_battery_subtitle">Start games at 30 FPS when Battery Saver or Game Booster battery mode is on</string>
     <string name="vapor_thermal_title">Heat and battery warnings</string>
     <string name="vapor_thermal_subtitle">Show a notice when the phone overheats or the battery drops below 15%</string>
+    <string name="vapor_group_saves_graphics">Graphics &amp; saves</string>
+    <string name="vapor_group_updates">Updates &amp; help</string>
+    <string name="vapor_update_check_title">Check for updates</string>
+    <string name="vapor_update_check_subtitle">Installed: %1$s. New builds install over this app, your games and logins stay</string>
+    <string name="vapor_update_auto_title">Check for updates when Vapor opens</string>
+    <string name="vapor_update_auto_subtitle">Shows a one-tap update when a new build is out</string>
+    <string name="vapor_update_none">You have the newest Vapor</string>
+    <string name="vapor_update_offline">Couldn\'t reach GitHub. Check your connection</string>
+    <string name="vapor_crash_log_title">Share last game crash log</string>
+    <string name="vapor_crash_log_subtitle">Saved automatically when a game closes with an error. Send it to get help</string>
+    <string name="vapor_crash_log_none">No game crash saved yet</string>
+    <string name="vapor_presets_title">Phone graphics presets</string>
+    <string name="vapor_presets_subtitle">On a game\'s first launch, set its graphics to what your phone runs smoothly (Unreal Engine and Bethesda games)</string>
+    <string name="vapor_presets_reset_title">Re-apply phone presets</string>
+    <string name="vapor_presets_reset_subtitle">Set every game back to phone presets on its next launch</string>
+    <string name="vapor_presets_reset_done">Presets will be re-applied on each game\'s next launch</string>
+    <string name="vapor_autosave_title">Automatic save backups</string>
+    <string name="vapor_autosave_subtitle">After each session, keep a copy of changed saves (newest 3, in the game menu → Saves)</string>
 </resources>
