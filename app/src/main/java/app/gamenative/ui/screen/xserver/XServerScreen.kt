@@ -309,7 +309,7 @@ private fun initialFpsLimiterEnabled(container: Container): Boolean =
 
 private fun initialFpsLimiterTarget(container: Container): Int =
     parsePositiveFpsLimit(container.getExtra(FPS_LIMITER_TARGET_EXTRA))
-        ?: DEFAULT_FPS_LIMITER_TARGET_HZ
+        ?: app.gamenative.vapor.VaporAutoTune.defaultFpsTarget(app.gamenative.vapor.VaporSettings.appContext)
 
 internal fun detectMaxRefreshRateHz(context: Context, attachedView: View?): Int {
     val display = attachedView?.display
@@ -567,6 +567,12 @@ fun XServerScreen(
             contentResolver.unregisterContentObserver(observer)
             BrightnessManager.clearDisplayBrightnessOverride(activity)
         }
+    }
+
+    // Vapor: stable-FPS mode, refresh-rate lock, heat and battery warnings while in game.
+    DisposableEffect(activity) {
+        val vaporSession = activity?.let { app.gamenative.vapor.VaporGameSession.start(it) }
+        onDispose { vaporSession?.stop() }
     }
 
     val suspendPolicy = remember(container.id) { container.suspendPolicy }

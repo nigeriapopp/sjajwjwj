@@ -1,0 +1,103 @@
+name: Build Vapor APK
+
+on:
+  push:
+    branches: [ "**" ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL /usr/local/share/boost /usr/share/swift
+          df -h /
+
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Install Android build tools
+        run: |
+          SDKM="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKM" --licenses > /dev/null || true
+          "$SDKM" --install "build-tools;34.0.0" > /dev/null
+
+      # Optional: add a repo secret VAPOR_SIGNING_KEY_B64 (base64 of an Android debug.keystore,
+      # passwords "android") so every build is signed with the same key and installs as an update.
+      - name: Signing key
+        env:
+          KEY_B64: ${{ secrets.VAPOR_SIGNING_KEY_B64 }}
+        run: |
+          mkdir -p ~/.android
+          if [ -n "$KEY_B64" ]; then
+            echo "$KEY_B64" | base64 -d > ~/.android/debug.keystore
+            echo "Using signing key from repo secret"
+          else
+            echo "No VAPOR_SIGNING_KEY_B64 secret: using a fresh key for this build"
+          fi
+
+      - name: Local properties (analytics off)
+        run: |
+          cat > local.properties <<EOF
+          POSTHOG_API_KEY=
+          POSTHOG_HOST=https://us.i.posthog.com
+          EOF
+
+      - name: Build app bundle
+        run: ./gradlew :app:bundleLegacyRelease
+
+      - name: Make universal APK (includes the Ubuntu runtime module)
+        id: apk
+        run: |
+          ./gradlew --stop || true
+          java -Xmx3g -jar tools/bundletool-all-1.17.2.jar build-apks \
+            --bundle=app/build/outputs/bundle/legacyRelease/app-legacy-release.aab \
+            --output=vapor.apks --mode=universal
+          unzip -o vapor.apks universal.apk
+          # AGP created ~/.android/debug.keystore during the build if the secret wasn't set.
+          "$ANDROID_HOME/build-tools/34.0.0/apksigner" sign \
+            --ks ~/.android/debug.keystore --ks-key-alias androiddebugkey \
+            --ks-pass pass:android --key-pass pass:android \
+            --out universal-signed.apk universal.apk
+          mkdir -p out
+          VERSION=$(grep -m1 'versionName = ' app/build.gradle.kts | sed -E 's/.*"(.*)".*/\1/')
+          mv universal-signed.apk "out/Vapor-${VERSION}.apk"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          ls -la out
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Vapor-apk
+          path: out/*.apk
+
+      - name: Publish GitHub release
+        if: github.event_name == 'workflow_dispatch' || github.ref_name == 'claude/steam-games-android-3vdaxx' || github.ref_name == 'main' || github.ref_name == 'master'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="vapor-${{ steps.apk.outputs.version }}-build${{ github.run_number }}"
+          gh release create "$TAG" out/*.apk \
+            --target "${{ github.sha }}" \
+            --title "Vapor ${{ steps.apk.outputs.version }} (build ${{ github.run_number }})" \
+            --notes "Download the APK below on your phone and install it. First-time setup guide: see README." \
+            --latest

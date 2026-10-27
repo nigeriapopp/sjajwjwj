@@ -1,130 +1,105 @@
-<div align="center">
+# Vapor — your Steam library, running on your phone
 
-# GameNative
+Vapor plays the Windows PC games you own on Steam (plus Epic, GOG and Amazon) **on the phone itself**. No PC, no streaming.
+Sign in with your Steam account, tap a game, it downloads, and it runs through Wine + an x86→ARM translator,
+with settings tuned for your phone automatically.
 
-**Play the PC games you already own — from Steam, Epic and GOG — on your Android device, with cloud saves.**
-
-<a href="https://trendshift.io/repositories/14497" target="_blank"><img src="https://trendshift.io/api/badge/repositories/14497" alt="utkarshdalal%2FGameNative | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
-
-<a href="https://www.star-history.com/utkarshdalal/gamenative">
- <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/badge?repo=utkarshdalal/GameNative&theme=dark" />
-  <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/badge?repo=utkarshdalal/GameNative" />
-  <img alt="Star History Rank" src="https://api.star-history.com/badge?repo=utkarshdalal/GameNative" />
- </picture>
-</a>
-
-[![GitHub Release](https://img.shields.io/github/v/release/utkarshdalal/GameNative?style=flat-square&logo=github&label=latest)](https://github.com/utkarshdalal/GameNative/releases/latest)
-[![GitHub stars](https://img.shields.io/github/stars/utkarshdalal/GameNative?style=flat-square&logo=github&color=ffd700)](https://github.com/utkarshdalal/GameNative/stargazers)
-[![Discord](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fdiscord.com%2Fapi%2Fv9%2Finvites%2F2hKv4VfZfE%3Fwith_counts%3Dtrue&query=%24.approximate_member_count&style=flat-square&logo=discord&logoColor=white&label=discord&color=5865F2&suffix=%20members)](https://discord.gg/2hKv4VfZfE)
-[![License](https://img.shields.io/badge/license-GPL%203.0-blue?style=flat-square)](https://github.com/utkarshdalal/GameNative/blob/master/LICENSE)
-[![Ko-fi](https://img.shields.io/badge/ko--fi-support-FF5E5B?style=flat-square&logo=ko-fi&logoColor=white)](https://ko-fi.com/gamenative)
-
-[**Download**](https://github.com/utkarshdalal/GameNative/releases/download/v1.3.0/gamenative-v1.3.0.apk) · [**Discord**](https://discord.gg/2hKv4VfZfE) · [**Support on Ko-fi**](https://ko-fi.com/gamenative)
-
-<video src="https://github.com/user-attachments/assets/95b5397b-908a-44ef-a10a-dac7723580b0" autoplay loop muted playsinline width="100%"></video>
-
-</div>
+Vapor is a fork of [GameNative](https://github.com/utkarshdalal/GameNative) (GPL-3.0), which builds on
+[Winlator](https://github.com/brunodev85/winlator). Vapor adds a phone auto-tuner and phone-specific
+performance features on top. All credit for the emulation stack goes to those projects.
 
 ---
 
-GameNative lets you run the PC games in your Steam, Epic and GOG libraries directly on Android — no streaming required. Your saves sync to the cloud, so you can stop on your PC and keep going on your phone.
+## Install (on your phone)
 
-It's still early. Not every game runs yet, and some need tweaking to play well, but the community is constantly finding and sharing configs that work — and these get applied automatically. You can see if anyone has tried running your game successfully at https://gamenative.app/compatibility.
+1. Open this repo's **Releases** page on your phone and download the newest `Vapor-….apk`.
+2. Tap the file and allow "Install unknown apps" for your browser when Android asks.
+3. If you already have **GameNative** installed, uninstall it first — Vapor uses the same internal app ID.
+4. Open Vapor, sign in to Steam (QR code or username + password + Steam Guard).
+5. Pick a game → **Install** → wait for the download → **Play**.
 
-## What you get
+First launch downloads the Windows runtime (Wine/Proton, drivers, DXVK) once — use Wi-Fi.
 
-- Play games you actually own on Steam, Epic, GOG and Amazon
-- Cloud saves that carry over between your PC and your phone
-- Automatically applied known configs, so many games just work out of the box with no tweaking required
-- Controller and touch support, with a custom control editor and on-screen HUD
-- Steam DLC, workshop and branch support
-- Active support over Discord if you need help getting a game running
+## How it works
 
-## Demo
+| Piece | What it does |
+|---|---|
+| JavaSteam | Native Android Steam login, library, downloads and cloud saves — no Steam client in Wine needed |
+| Wine / Proton (ARM64EC) | Runs the Windows game |
+| FEX / Box64 | Translates x86 game code to ARM |
+| DXVK / VKD3D | Turns DirectX 9–12 into Vulkan |
+| Turnip / system Vulkan | GPU driver (Turnip on Snapdragon/Adreno, the phone's own driver on Exynos/Mali) |
 
-[TechDweeb](https://www.youtube.com/@TechDweeb) walks through setting up GameNative on an Android handheld in a couple of minutes:
+## What Vapor adds
 
-<div align="center">
+**Phone Auto-Tune** — on first launch Vapor reads your chip, GPU, RAM and screen and picks defaults:
+- Sorts the phone into Flagship / High-end / Mid-range / Entry-level using a table of known chips
+  (Snapdragon 8 Gen 1–8 Elite Gen 5, 7-series, Exynos 2100–2500, Dimensity 8000/9000, Tensor G1–G5) with a GPU-based fallback for anything else.
+- Sets the default FPS cap: 60 on Flagship/High-end; 45 on Mid-range phones with 90 Hz screens, otherwise 30; 30 on Entry-level.
+- Drops entry-level phones to 960×540 so games stay playable.
+- Turns the FPS counter on so you can see how a game runs.
+- Re-run it any time: **Settings → Performance → Re-run Phone Auto-Tune**.
 
-<a href="https://youtu.be/QqIChmAu2_A?si=Ha6xzTQXZA2H8HUN&t=53" target="_blank"><img src="https://github.com/user-attachments/assets/6957e3a1-34ac-41f5-b558-0f1868dbf3d4" alt="Youtube Video" /></a>
+**Phone Check** (Settings → Performance) — a report of your phone, chip, GPU, RAM, refresh rate, performance class,
+what Vapor set, and tips for that exact phone.
 
-</div>
+**Galaxy S22 / S22+ / S22 Ultra support** — both versions are recognised:
+- *Snapdragon 8 Gen 1 (US, China, many others)* → Turnip driver (best compatibility), 60 FPS cap.
+- *Exynos 2200 (Europe and others)* → Samsung's own Vulkan driver, since Turnip doesn't support Xclipse GPUs.
+- Tips shown in Phone Check for heat, case removal, and Game Booster.
 
-## How to use
+**Performance settings** (Settings → Performance):
+- **Default FPS cap** — 30 / 40 / 45 / 60 / 90 / 120 for games you haven't tweaked.
+- **Stable FPS mode** — Android sustained-performance mode: slightly lower peak, much less throttling in long sessions.
+- **Lock screen to max refresh rate** — stops 120 Hz screens dropping their refresh rate mid-game.
+- **Respect Battery Saver** — games start at 30 FPS when Battery Saver or Game Booster's battery mode is on.
+- **Heat and battery warnings** — a notice when the phone overheats or the battery drops below 15%.
 
-1. Download the latest release [here](https://downloads.gamenative.app/releases/1.3.0/gamenative-v1.3.0.apk)
-2. Install the APK on your Android device
-3. Log in to your Steam account
-4. Install your game
-5. Hit play and enjoy
+**Android Game Mode** — Vapor registers with Android's Game Dashboard and Samsung Game Booster, so their
+Performance / Battery modes show up and Vapor follows them.
 
-## Support
+**Other changes** — the upstream auto-updater is off (it would offer GameNative builds that can't install over Vapor),
+the "Source code" link points here, analytics have no key in Vapor builds, and the app is renamed Vapor.
 
-The fastest way to get help is the [Discord server](https://discord.gg/2hKv4VfZfE) — we're 35k+ strong and someone's usually around.
+## Already built in (from GameNative)
 
-Please **don't** open issues on GitHub; they're closed automatically. Bring it to Discord instead.
+- Steam, Epic, GOG and Amazon libraries; Steam cloud saves; Steam achievements; Workshop mods
+- Community-tested configs applied per game automatically, plus a compatibility badge per game
+- On-screen touch controls with an editor; controller support (Xbox, PlayStation, Joy-Con and others), gyro
+- Performance HUD (FPS, CPU, GPU, temperature, battery)
+- FPS limiter with an adaptive cap that steps down when the phone can't hold the target
+- Frame generation (LSFG) to double the displayed frame rate
+- CPU/GPU power control on Samsung phones (Samsung Performance SDK) and handhelds
+- Per-game settings: resolution, driver, DXVK/VKD3D version, translator presets, env vars, Windows components
+- External display support, screen effects (sharpening)
 
-If you'd like to chip in, you can support the project on [Ko-fi](https://ko-fi.com/gamenative).
+## Honest expectations
 
-## Contributing
+Phones aren't PCs, and translating x86 Windows code to ARM costs performance. Roughly:
 
-Want to help out? Message us to get into the **#development** channel on [Discord](https://discord.gg/2hKv4VfZfE), or open a thread there. Things we're currently looking for help with live on our [Trello board](https://trello.com/b/vGRkFoAM/open-source-board).
+| Phone class | Typical result |
+|---|---|
+| Flagship (8 Gen 3 / 8 Elite / Dimensity 9300+) | 60 FPS in most indie and 2010s games; many newer games at 30–60 FPS on low settings |
+| High-end (S22 / 8 Gen 1 / 888 / Exynos 2200) | 60 FPS in indie and older games; 30–45 FPS in 2015–2019 3D games on low |
+| Mid-range | 2D, indie and older 3D games run well; new 3D games are usually too heavy |
+| Entry-level | 2D, indie and early-2000s games |
 
-### Fix a game that doesn't work
+Not every game runs. Games with kernel anti-cheat (Valorant, Fortnite, many online shooters) will never run.
+Check a game's community rating on its page before downloading something big.
 
-Every night we publish the list of games that don't run in GameNative, built from real usage data, at [GameNative/gamenative-compat](https://github.com/GameNative/gamenative-compat). Each broken game has [an open issue](https://github.com/GameNative/gamenative-compat/issues?q=is%3Aopen+label%3Adoes-not-work) with the numbers behind it: how many players hit it, what they report, whether the game window ever renders.
+**S22 tips:** the Snapdragon 8 Gen 1 runs hot. For long sessions of heavy 3D games, cap at 40–45 FPS,
+turn on **Stable FPS mode**, use Game Booster's performance profile, and take the phone out of its case.
 
-If you want to take one on:
+## Building
 
-1. Pick a game from the list and open its issue. Check the comments to see whether someone is already on it, then leave a comment saying you are taking it.
-2. Work out why it fails. Most fixes land in this repo, in [proton-wine](https://github.com/GameNative/proton-wine), in [FEX](https://github.com/GameNative/FEX), in the GPU driver wrappers or in the per-game config.
-3. Open a pull request in the right repo, then comment on the game's issue with a link to it. Once the fix ships and players start getting the game to run, the issue closes itself.
+Every push builds an APK with GitHub Actions (`.github/workflows/build-apk.yml`) and publishes it as a Release.
 
-Own a broken game and want to donate a key so someone can fix it? Email [support@gamenative.app](mailto:support@gamenative.app).
+To keep the same signing key across builds (so new versions install as updates instead of needing a reinstall),
+add a repository secret `VAPOR_SIGNING_KEY_B64` containing a base64-encoded Android `debug.keystore`
+(alias `androiddebugkey`, passwords `android`). Without it, each build gets a fresh key.
 
-### Building
-
-Most of the time you don't need this — if you just want to play, grab the release above. This is for contributors.
-
-1. Build it like any normal Android Studio project. Ask on Discord if you get stuck.
-2. **SteamGridDB API key (optional):** to pull game artwork for custom games, add your key to `local.properties`:
-   ```properties
-   STEAMGRIDDB_API_KEY=your_api_key_here
-   ```
-   You can get one from your [SteamGridDB preferences](https://www.steamgriddb.com/profile/preferences). Without it everything still works — it just won't fetch images.
-
-## Analytics & privacy
-
-GameNative uses [PostHog](https://posthog.com) for anonymous analytics. No personal information is ever collected — no names, emails, IPs or device identifiers.
-
-**Always collected**, to improve game compatibility:
-- Game launch, close and exit events (game name, store, session length, average FPS, container config)
-- Game install, cancel and uninstall events
-
-This is how we figure out which games work, how well they run, and which configs to apply automatically for the next person. It can't identify you.
-
-**Optional**, and switchable under *Settings → Info → Usage Analytics*:
-- Feature usage (on-screen keyboard, controller, HUD, control editor)
-- Login success/failure events
-- Recommendation interactions
-- App lifecycle events (foreground/background)
-- Cloud sync events
-
-The full [Privacy Policy](PrivacyPolicy/README.md) has the details.
-
-## Supporters
-
-Thanks to our [Ko-fi sponsors](https://ko-fi.com/gamenative) and [GitHub sponsors](https://github.com/sponsors/utkarshdalal?preview=true), including [CodeRabbit](https://coderabbit.link/gnative).
-
-[![Star History Chart](https://star-history.dera.page/svg?repos=utkarshdalal/GameNative&type=Date&theme=dark)](https://star-history.dera.page/#utkarshdalal/GameNative&Date)
+Local build: Android Studio, JDK 17, then `./gradlew :app:bundleLegacyRelease`.
 
 ## License
 
-[GPL 3.0](https://github.com/utkarshdalal/GameNative/blob/master/LICENSE).
-
-See [THIRD_PARTY_NOTICES](THIRD_PARTY_NOTICES) for attributions, copyleft source offers, and notices about third-party and proprietary components bundled with the app.
-
----
-
-**Disclaimer:** This software is meant for playing games that you legally own. Don't use it for piracy or anything else illegal. The maintainer takes no responsibility for misuse.
+GPL-3.0, same as GameNative. See `LICENSE` and `THIRD_PARTY_NOTICES`.

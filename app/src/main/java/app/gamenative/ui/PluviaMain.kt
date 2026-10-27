@@ -484,6 +484,8 @@ fun PluviaMain(
 
     // Check for updates on app start
     LaunchedEffect(Unit) {
+        // Vapor: upstream's updater would offer GameNative builds signed with a different key.
+        if (!app.gamenative.vapor.VaporSettings.upstreamUpdatesEnabled) return@LaunchedEffect
         if (BuildConfig.MODERN_ANDROID || BuildConfig.XR_BUILD) return@LaunchedEffect
         val checkedUpdateInfo = UpdateChecker.checkForUpdate(context)
         if (checkedUpdateInfo != null) {

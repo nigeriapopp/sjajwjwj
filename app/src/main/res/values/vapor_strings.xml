@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
+    <string name="vapor_ok">OK</string>
+    <string name="vapor_phone_check_title">Phone Check</string>
+    <string name="vapor_phone_check_subtitle">See your chip, GPU and what Vapor tuned for this phone</string>
+    <string name="vapor_autotune_title">Re-run Phone Auto-Tune</string>
+    <string name="vapor_autotune_subtitle">Detect this phone again and reset the default FPS cap for new games</string>
+    <string name="vapor_autotune_done">Tuned for a %1$s phone: new games start capped at %2$d FPS</string>
+    <string name="vapor_fps_target_title">Default FPS cap</string>
+    <string name="vapor_fps_target_subtitle">%1$d FPS for games you haven\'t tweaked (tap to change)</string>
+    <string name="vapor_sustained_title">Stable FPS mode</string>
+    <string name="vapor_sustained_subtitle">Android sustained-performance mode: slightly lower peak, much less throttling in long sessions</string>
+    <string name="vapor_refresh_title">Lock screen to max refresh rate</string>
+    <string name="vapor_refresh_subtitle">Keeps 120 Hz screens from dropping refresh rate in game. Uses more battery</string>
+    <string name="vapor_battery_title">Respect Battery Saver</string>
+    <string name="vapor_battery_subtitle">Start games at 30 FPS when Battery Saver or Game Booster battery mode is on</string>
+    <string name="vapor_thermal_title">Heat and battery warnings</string>
+    <string name="vapor_thermal_subtitle">Show a notice when the phone overheats or the battery drops below 15%</string>
+</resources>

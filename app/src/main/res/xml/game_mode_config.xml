@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lets Android's Game Dashboard / Samsung Game Booster offer Performance and Battery modes.
+     Vapor reads the chosen mode itself (battery mode caps new games at 30 FPS). -->
+<game-mode-config xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:supportsBatteryGameMode="true"
+    android:supportsPerformanceGameMode="true"
+    android:allowGameDownscaling="false"
+    android:allowGameFpsOverride="false"
+    tools:targetApi="33" />

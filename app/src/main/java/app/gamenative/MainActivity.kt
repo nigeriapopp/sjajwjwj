@@ -264,6 +264,8 @@ class MainActivity : ComponentActivity() {
         controllerInputManager?.registerInputDeviceListener(controllerDeviceListener, null)
 
         ContainerUtils.setContainerDefaults(applicationContext)
+        // Vapor: tune defaults for this phone once (needs the GPU info read above).
+        app.gamenative.vapor.VaporAutoTune.applyIfNeeded(applicationContext)
 
         handleLaunchIntent(intent)
 
