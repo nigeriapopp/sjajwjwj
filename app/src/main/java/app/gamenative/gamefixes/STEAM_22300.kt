@@ -16,6 +16,7 @@ val STEAM_Fix_22300: KeyedGameFix = KeyedCompositeGameFix(
                 "Installed Path" to INSTALL_PATH_PLACEHOLDER,
             ),
         ),
+        BethesdaSetupFix(app.gamenative.vapor.BethesdaSetup.FALLOUT3),
         BethesdaThreadingFix(
             myGamesFolder = "Fallout3",
             defaultIni = "Fallout_default.ini",

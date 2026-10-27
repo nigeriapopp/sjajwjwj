@@ -16,6 +16,7 @@ val STEAM_Fix_22380: KeyedGameFix = KeyedCompositeGameFix(
                 "Installed Path" to INSTALL_PATH_PLACEHOLDER,
             ),
         ),
+        BethesdaSetupFix(app.gamenative.vapor.BethesdaSetup.NEW_VEGAS),
         BethesdaThreadingFix(
             myGamesFolder = "FalloutNV",
             defaultIni = "Fallout_default.ini",

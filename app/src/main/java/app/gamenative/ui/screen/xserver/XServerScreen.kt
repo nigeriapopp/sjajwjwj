@@ -4704,6 +4704,7 @@ private fun setupXEnvironment(
             Timber.e("Guest program terminated with status: $status")
             // Vapor Crash Guard: keep the log for sharing and do a full file repair on the next launch.
             app.gamenative.vapor.VaporSettings.repairPending = true
+            container?.id?.let { app.gamenative.vapor.VaporSettings.recordCrash(it) }
             Thread {
                 app.gamenative.vapor.GameCrashLog.capture(context, ContainerUtils.resolveGameName(appId), status)
             }.start()
@@ -5467,7 +5468,9 @@ private fun exit(
     CoroutineScope(Dispatchers.IO).launch { SessionReport.recordRun(container, exitProperties) }
     // Vapor: quick recap of how the session ran, and self-healing for Fast Launch.
     runCatching { app.gamenative.vapor.SessionSummary.show(exitProperties) }
-    runCatching { app.gamenative.vapor.VaporFastLaunch.onSessionEnded() }
+    runCatching {
+        if (app.gamenative.vapor.VaporFastLaunch.onSessionEnded()) app.gamenative.vapor.VaporSettings.recordCrash(container.id)
+    }
     // Vapor: rolling save backup once Wine has shut down (skipped when no save changed).
     if (app.gamenative.vapor.VaporSettings.autoSaveBackup) {
         val vaporRoot = container.rootDir

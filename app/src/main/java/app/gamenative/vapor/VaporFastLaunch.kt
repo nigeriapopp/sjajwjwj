@@ -58,15 +58,17 @@ object VaporFastLaunch {
         if (VaporSettings.repairPending) VaporSettings.repairPending = false
     }
 
-    /** A game that closes within 40 s of opening probably crashed: do a full unpack next time, just in case. */
-    fun onSessionEnded() {
+    /** A game that closes within 40 s of opening probably crashed: do a full unpack next time. Returns true then. */
+    fun onSessionEnded(): Boolean {
         val started = sessionStartedAt
         sessionStartedAt = 0L
-        if (started == 0L) return
+        if (started == 0L) return false
         if (shouldRepairAfter(System.currentTimeMillis() - started)) {
             Timber.i("[Vapor] Fast Launch: short session, next launch does a full unpack")
             VaporSettings.repairPending = true
+            return true
         }
+        return false
     }
 
     fun shouldRepairAfter(sessionMs: Long): Boolean = sessionMs in 0 until CRASH_WINDOW_MS

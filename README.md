@@ -103,8 +103,14 @@ when a controller's battery drops below 15%.
 
 **After each game** — a one-line recap: play time, average FPS, 1% low FPS, battery temperature.
 
-**Fallout 3 / Fallout 3 GOTY / New Vegas** — the many-core startup crash fix (`bUseThreadedAI=1`,
-`iNumHWThreads=2`) is applied automatically.
+**Fallout 3 / Fallout 3 GOTY / New Vegas / Oblivion** — set up to start reliably under Wine:
+- the game starts directly instead of through its launcher (the launcher's Play button is a known crash point);
+- the many-core startup crash fix (`bUseThreadedAI=1`, `iNumHWThreads=2`) is in place before the first launch, and
+  the game is shown 4 CPU cores — the phone's fast ones (`WINE_CPU_TOPOLOGY`);
+- missing settings files are created from the game's own Low/Medium preset, windowed at exactly the screen size
+  Vapor renders (fullscreen mode switches are a classic Wine crash), with phone-friendly shadows and no MSAA;
+- if the game still crashes, the next launch turns off Wine's media decoder (winegstreamer) for that game, the
+  best-known fix for Fallout 3 / Oblivion crashes under Wine (in-game music may be silent in that mode).
 
 **First launches** — a notice that early shader stutter is normal, plus one short tip in each of your first 3 sessions.
 

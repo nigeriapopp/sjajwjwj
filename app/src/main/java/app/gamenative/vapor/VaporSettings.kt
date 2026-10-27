@@ -151,6 +151,14 @@ object VaporSettings {
         e.apply()
     }
 
+    /** How many times a game (by container id) crashed; drives Crash Guard's safe-mode steps. */
+    fun crashCount(key: String): Int = p()?.getInt("crashes_$key", 0) ?: 0
+
+    fun recordCrash(key: String) {
+        val prefs = p() ?: return
+        prefs.edit().putInt("crashes_$key", prefs.getInt("crashes_$key", 0) + 1).apply()
+    }
+
     /** Keep a rolling automatic save backup after each session. */
     var autoSaveBackup: Boolean
         get() = p()?.getBoolean("auto_save_backup", true) ?: true
