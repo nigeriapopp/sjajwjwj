@@ -8,7 +8,7 @@ import android.content.IntentFilter
 import android.os.BatteryManager
 import android.os.Build
 import android.os.PowerManager
-import android.widget.Toast
+import app.gamenative.ui.util.SnackbarManager
 import java.util.concurrent.Executor
 import timber.log.Timber
 
@@ -88,7 +88,7 @@ class VaporGameSession private constructor(private val activity: Activity) {
         } else {
             "Phone is getting hot. A 30-45 FPS cap will keep frame rates steadier."
         }
-        Toast.makeText(activity, msg, Toast.LENGTH_LONG).show()
+        SnackbarManager.show(msg)
     }
 
     private fun watchBattery() {
@@ -102,7 +102,7 @@ class VaporGameSession private constructor(private val activity: Activity) {
                 val pct = level * 100 / scale
                 if (pct <= 15) {
                     batteryWarned = true
-                    Toast.makeText(activity, "Battery at $pct% — plug in or lower the FPS cap to keep playing.", Toast.LENGTH_LONG).show()
+                    SnackbarManager.show("Battery at $pct% — plug in or lower the FPS cap to keep playing.")
                 }
             }
         }

@@ -1,6 +1,5 @@
 package app.gamenative.ui.screen.settings
 
-import android.widget.Toast
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.rememberScrollState
@@ -70,11 +69,9 @@ fun SettingsGroupPerformance() {
             onClick = {
                 val profile = VaporAutoTune.apply(context)
                 fpsTarget = VaporSettings.fpsTarget
-                Toast.makeText(
-                    context,
+                app.gamenative.ui.util.SnackbarManager.show(
                     context.getString(R.string.vapor_autotune_done, profile.tier.label, profile.plan.fpsTarget),
-                    Toast.LENGTH_LONG,
-                ).show()
+                )
             },
         )
 
