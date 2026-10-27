@@ -56,12 +56,10 @@ jobs:
             echo "No VAPOR_SIGNING_KEY_B64 secret: using a fresh key for this build"
           fi
 
-      - name: Local properties (analytics off)
-        run: |
-          cat > local.properties <<EOF
-          POSTHOG_API_KEY=
-          POSTHOG_HOST=https://us.i.posthog.com
-          EOF
+      # No analytics keys: the secrets plugin copies values verbatim into BuildConfig,
+      # and without them the app's own fallback ("" key) keeps analytics off.
+      - name: Local properties
+        run: echo "sdk.dir=$ANDROID_HOME" > local.properties
 
       - name: Build app bundle
         run: ./gradlew :app:bundleLegacyRelease

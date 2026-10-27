@@ -5448,6 +5448,8 @@ private fun exit(
         properties = exitProperties,
     )
     CoroutineScope(Dispatchers.IO).launch { SessionReport.recordRun(container, exitProperties) }
+    // Vapor: quick recap of how the session ran.
+    runCatching { app.gamenative.vapor.SessionSummary.show(exitProperties) }
     runCatching { windowActivity.stop() }
 
     // Store session data in container metadata
