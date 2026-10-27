@@ -1,6 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
     <string name="vapor_ok">OK</string>
+    <string name="vapor_group_phone">Your phone</string>
+    <string name="vapor_group_controls">Controls</string>
+    <string name="vapor_group_in_game">In game</string>
+    <string name="vapor_share">Share</string>
+    <string name="vapor_playtime_title">Play-time reminders</string>
+    <string name="vapor_playtime_subtitle">A small notice every hour you play</string>
     <string name="vapor_phone_check_title">Phone Check</string>
     <string name="vapor_phone_check_subtitle">See your chip, GPU and what Vapor tuned for this phone</string>
     <string name="vapor_autotune_title">Re-run Phone Auto-Tune</string>

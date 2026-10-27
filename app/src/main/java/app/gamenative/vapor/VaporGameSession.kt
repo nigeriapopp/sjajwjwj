@@ -1,6 +1,7 @@
 package app.gamenative.vapor
 
 import android.app.Activity
+import android.app.ActivityManager
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -43,6 +44,32 @@ class VaporGameSession private constructor(
         }
         if (VaporSettings.doNotDisturb) enableDoNotDisturb()
         scheduleFirstLaunchNotices()
+        warnIfLowMemory()
+        if (VaporSettings.playtimeReminders) schedulePlaytimeReminder(1)
+    }
+
+    /** Heavy PC games need room: warn when Android reports little free memory at launch. */
+    private fun warnIfLowMemory() {
+        try {
+            val am = activity.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager ?: return
+            val info = ActivityManager.MemoryInfo()
+            am.getMemoryInfo(info)
+            val freeGb = info.availMem / (1024.0 * 1024.0 * 1024.0)
+            if (freeGb < LOW_MEMORY_GB) {
+                handler.postDelayed({
+                    SnackbarManager.show(
+                        "Only %.1f GB of memory free — close other apps if the game stutters or crashes.".format(freeGb),
+                    )
+                }, 3_000L)
+            }
+        } catch (e: Exception) { }
+    }
+
+    private fun schedulePlaytimeReminder(hours: Int) {
+        handler.postDelayed({
+            SnackbarManager.show(if (hours == 1) "You've been playing for 1 hour." else "You've been playing for $hours hours.")
+            schedulePlaytimeReminder(hours + 1)
+        }, HOUR_MS)
     }
 
     /** First time a game runs: explain shader stutter. First few sessions overall: one tip each. */
@@ -188,6 +215,9 @@ class VaporGameSession private constructor(
     }
 
     companion object {
+        private const val LOW_MEMORY_GB = 2.0
+        private const val HOUR_MS = 60L * 60L * 1000L
+
         fun start(activity: Activity, gameKey: String): VaporGameSession =
             VaporGameSession(activity, gameKey).also { it.begin() }
     }

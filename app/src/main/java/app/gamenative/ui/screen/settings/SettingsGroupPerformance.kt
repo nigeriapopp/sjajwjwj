@@ -36,7 +36,7 @@ fun SettingsGroupPerformance() {
     val context = LocalContext.current
     remember(context) { VaporSettings.init(context) }
 
-    SettingsGroup {
+    SettingsGroup(title = { Text(stringResource(R.string.vapor_group_phone)) }) {
         var phoneReport by rememberSaveable { mutableStateOf<String?>(null) }
         var fpsTarget by rememberSaveable { mutableIntStateOf(VaporSettings.fpsTarget) }
 
@@ -51,6 +51,19 @@ fun SettingsGroupPerformance() {
                 },
                 confirmButton = {
                     TextButton(onClick = { phoneReport = null }) { Text(stringResource(R.string.vapor_ok)) }
+                },
+                dismissButton = {
+                    TextButton(onClick = {
+                        val send = android.content.Intent(android.content.Intent.ACTION_SEND)
+                            .setType("text/plain")
+                            .putExtra(android.content.Intent.EXTRA_TEXT, report)
+                        runCatching {
+                            context.startActivity(
+                                android.content.Intent.createChooser(send, null)
+                                    .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK),
+                            )
+                        }
+                    }) { Text(stringResource(R.string.vapor_share)) }
                 },
             )
         }
@@ -87,6 +100,9 @@ fun SettingsGroupPerformance() {
             },
         )
 
+    }
+
+    SettingsGroup(title = { Text(stringResource(R.string.vapor_group_controls)) }) {
         var smartControls by rememberSaveable { mutableStateOf(VaporSettings.smartControls) }
         SettingsSwitch(
             colors = settingsTileColorsAlt(),
@@ -111,6 +127,9 @@ fun SettingsGroupPerformance() {
             },
         )
 
+    }
+
+    SettingsGroup(title = { Text(stringResource(R.string.vapor_group_in_game)) }) {
         var heatStepDown by rememberSaveable { mutableStateOf(VaporSettings.heatStepDown) }
         SettingsSwitch(
             colors = settingsTileColorsAlt(),
@@ -145,6 +164,18 @@ fun SettingsGroupPerformance() {
                         }
                     }
                 }
+            },
+        )
+
+        var playtime by rememberSaveable { mutableStateOf(VaporSettings.playtimeReminders) }
+        SettingsSwitch(
+            colors = settingsTileColorsAlt(),
+            state = playtime,
+            title = { Text(stringResource(R.string.vapor_playtime_title)) },
+            subtitle = { Text(stringResource(R.string.vapor_playtime_subtitle)) },
+            onCheckedChange = {
+                playtime = it
+                VaporSettings.playtimeReminders = it
             },
         )
 

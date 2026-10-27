@@ -90,6 +90,11 @@ object VaporSettings {
         get() = p()?.getBoolean("do_not_disturb", false) ?: false
         set(v) { p()?.edit()?.putBoolean("do_not_disturb", v)?.apply() }
 
+    /** A small notice every hour of play. */
+    var playtimeReminders: Boolean
+        get() = p()?.getBoolean("playtime_reminders", false) ?: false
+        set(v) { p()?.edit()?.putBoolean("playtime_reminders", v)?.apply() }
+
     var sessionsPlayed: Int
         get() = p()?.getInt("sessions_played", 0) ?: 0
         set(v) { p()?.edit()?.putInt("sessions_played", v)?.apply() }

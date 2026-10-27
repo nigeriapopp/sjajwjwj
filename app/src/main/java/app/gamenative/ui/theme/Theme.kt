@@ -168,7 +168,20 @@ fun PluviaTheme(
     style: PaletteStyle = PaletteStyle.TonalSpot,
     content: @Composable () -> Unit,
 ) {
-    val colorScheme = DarkColorScheme
+    // Vapor: "Dark + AMOLED" now really uses true black, which saves battery on OLED phones like the S22.
+    val colorScheme = if (isAmoled) {
+        DarkColorScheme.copy(
+            background = Color.Black,
+            surface = Color(0xFF0A0A0C),
+            surfaceContainerLowest = Color.Black,
+            surfaceContainerLow = Color(0xFF070709),
+            surfaceContainer = Color(0xFF0D0D10),
+            surfaceContainerHigh = Color(0xFF141418),
+            surfaceContainerHighest = Color(0xFF1B1B20),
+        )
+    } else {
+        DarkColorScheme
+    }
     val pluviaColors = if (isDark) DarkPluviaColors else DarkPluviaColors // We can use LightPluviaColors when ready
 
     val view = LocalView.current
