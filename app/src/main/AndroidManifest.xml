@@ -40,6 +40,11 @@
 
     <queries>
         <package android:name="com.android.vending" />
+        <!-- Vapor Minecraft hub: detect installed Java Edition launchers -->
+        <package android:name="com.movtery.zalithlauncher.v2" />
+        <package android:name="com.movtery.zalithlauncher" />
+        <package android:name="org.angelauramc.amethyst" />
+        <package android:name="net.kdt.pojavlaunch" />
         <intent>
             <action android:name="android.intent.action.VIEW" />
             <data android:mimeType="application/vnd.android.package-archive" />

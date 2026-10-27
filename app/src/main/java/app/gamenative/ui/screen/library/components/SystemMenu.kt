@@ -49,6 +49,7 @@ import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.ScreenRotation
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material.icons.filled.SupportAgent
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -283,6 +284,7 @@ fun SystemMenu(
     var persona by remember { mutableStateOf<SteamFriend?>(null) }
     var selectedStatus by remember(persona) { mutableStateOf(persona?.state ?: EPersonaState.Online) }
     var showSupporters by remember { mutableStateOf(false) }
+    var showMinecraft by remember { mutableStateOf(false) }
     var showStatusPicker by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
@@ -321,6 +323,7 @@ fun SystemMenu(
     }
 
     SupportersDialog(visible = showSupporters, onDismiss = { showSupporters = false })
+    if (showMinecraft) MinecraftHubDialog(onDismiss = { showMinecraft = false })
 
     val colorOnline = PluviaTheme.colors.statusInstalled
     val colorAway = PluviaTheme.colors.statusAway
@@ -624,6 +627,13 @@ fun SystemMenu(
                             },
                             modifier = Modifier.focusProperties { up = rotateFocusRequester },
                             focusRequester = firstItemFocusRequester,
+                        )
+
+                        // Vapor: Minecraft Java Edition hub.
+                        SystemMenuItem(
+                            text = "Minecraft: Java Edition",
+                            icon = Icons.Default.SportsEsports,
+                            onClick = { showMinecraft = true },
                         )
 
                         SystemMenuItem(
