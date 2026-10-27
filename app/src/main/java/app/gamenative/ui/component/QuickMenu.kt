@@ -12,6 +12,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.ScrollState
@@ -54,6 +55,7 @@ import androidx.compose.material.icons.filled.Monitor
 import androidx.compose.material.icons.filled.Mouse
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.QueryStats
+import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.ScreenRotation
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Speed
@@ -158,6 +160,7 @@ private object QuickMenuTab {
     const val INVITE = 6
     const val POWER = 7
     const val GAMESCOPE = 8
+    const val SAVES = 9
 }
 
 private class GyroQuickMenuState(private val container: Container) {
@@ -602,6 +605,7 @@ fun QuickMenu(
         QuickMenuTab.POWER -> R.string.power_control
         QuickMenuTab.GAMESCOPE -> R.string.gamescope_tab_title
         QuickMenuTab.IMMERSIVE -> R.string.quick_menu_tab_immersive
+        QuickMenuTab.SAVES -> R.string.vapor_saves_title
         else -> R.string.quick_menu_tab_controller
     }
 
@@ -640,6 +644,9 @@ fun QuickMenu(
         }
     }
     val powerItemFocusRequester = remember { FocusRequester() }
+    val savesTabFocusRequester = remember { FocusRequester() }
+    val savesItemFocusRequester = remember { FocusRequester() }
+    val vaporScope = rememberCoroutineScope()
     val gamescopeScrollState = rememberScrollState()
     val gamescopeTabFocusRequester = remember { FocusRequester() }
     val gamescopeItemFocusRequester = remember { FocusRequester() }
@@ -666,6 +673,7 @@ fun QuickMenu(
     val availableTabs = remember(isLsfgAvailable, hasEffectsTab, immersiveControls, inviteMenu, isGamescopeSession)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           {
         buildList {
             add(QuickMenuTab.HUD)
+            if (container != null) add(QuickMenuTab.SAVES)
             add(QuickMenuTab.POWER)
             if (isGamescopeSession) add(QuickMenuTab.GAMESCOPE)
             if (isLsfgAvailable) add(QuickMenuTab.LSFG)
@@ -684,6 +692,7 @@ fun QuickMenu(
         immersiveHooks?.registerFocusTabRail?.invoke {
             val requester = when (selectedTab) {
                 QuickMenuTab.HUD -> hudTabFocusRequester
+                QuickMenuTab.SAVES -> savesTabFocusRequester
                 QuickMenuTab.GAMESCOPE -> gamescopeTabFocusRequester
                 QuickMenuTab.LSFG -> lsfgTabFocusRequester
                 QuickMenuTab.EFFECTS -> effectsTabFocusRequester
@@ -762,7 +771,18 @@ fun QuickMenu(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0f))
+                    // Vapor: dim the game behind the menu, except on tabs that preview the picture.
+                    .background(
+                        MaterialTheme.colorScheme.scrim.copy(
+                            alpha = if (selectedTab == QuickMenuTab.EFFECTS || selectedTab == QuickMenuTab.HUD ||
+                                selectedTab == QuickMenuTab.GAMESCOPE || selectedTab == QuickMenuTab.LSFG
+                            ) {
+                                0f
+                            } else {
+                                0.35f
+                            },
+                        ),
+                    )
                     .then(
                         // Immersive only: .clickable() adds a screen-sized focus target that
                         // Compose's directional focus search can land on, silently closing the
@@ -782,10 +802,14 @@ fun QuickMenu(
 
         AnimatedVisibility(
             visibleState = visibleState,
+            // Vapor: springy slide with a fade instead of a flat 200 ms slide.
             enter = slideInHorizontally(
                 initialOffsetX = { fullWidth -> -fullWidth },
-                animationSpec = tween(200),
-            ),
+                animationSpec = androidx.compose.animation.core.spring(
+                    dampingRatio = 0.8f,
+                    stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow,
+                ),
+            ) + fadeIn(tween(160)),
             exit = slideOutHorizontally(
                 targetOffsetX = { fullWidth -> -fullWidth },
                 animationSpec = tween(150),
@@ -822,12 +846,11 @@ fun QuickMenu(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
-                        Text(
-                            text = stringResource(R.string.quick_menu_title),
-                            style = MaterialTheme.typography.titleLarge.copy(
-                                fontWeight = FontWeight.SemiBold,
-                            ),
-                            color = MaterialTheme.colorScheme.onSurface,
+                        app.gamenative.ui.component.quickMenus.VaporMenuHeader(
+                            containerId = container?.id,
+                            fallbackTitle = stringResource(R.string.quick_menu_title),
+                            visible = isVisible,
+                            modifier = Modifier.weight(1f),
                         )
                         QuickMenuCloseButton(onClick = onDismiss)
                     }
@@ -869,6 +892,20 @@ fun QuickMenu(
                                     modifier = Modifier.width(56.dp),
                                     focusRequester = hudTabFocusRequester,
                                 )
+                                if (container != null) {
+                                    QuickMenuTabButton(
+                                        icon = Icons.Default.Save,
+                                        contentDescriptionResId = R.string.vapor_saves_title,
+                                        selected = selectedTab == QuickMenuTab.SAVES,
+                                        accentColor = PluviaTheme.colors.accentCyan,
+                                        onSelected = {
+                                            selectedTab = QuickMenuTab.SAVES
+                                            PrefManager.quickMenuLastTab = selectedTab
+                                        },
+                                        modifier = Modifier.width(56.dp),
+                                        focusRequester = savesTabFocusRequester,
+                                    )
+                                }
                                 QuickMenuTabButton(
                                     icon = Icons.Default.BatteryChargingFull,
                                     contentDescriptionResId = R.string.power_control,
@@ -982,6 +1019,34 @@ fun QuickMenu(
                                     .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)),
                             )
 
+                            if (container != null) {
+                                // Vapor: one-tap quick save (snapshot of the game's save folders).
+                                QuickMenuRailActionButton(
+                                    item = QuickMenuItem(
+                                        id = 0,
+                                        icon = Icons.Default.Save,
+                                        labelResId = R.string.vapor_quick_save,
+                                        accentColor = PluviaTheme.colors.accentCyan,
+                                    ),
+                                    onClick = {
+                                        val root = container.rootDir
+                                        vaporScope.launch {
+                                            val snap = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                                app.gamenative.vapor.SaveSnapshots.create(root, "Quick save")
+                                            }
+                                            app.gamenative.ui.util.SnackbarManager.show(
+                                                if (snap != null) {
+                                                    "Quick saved · " + app.gamenative.vapor.SaveSnapshots.describeSize(snap.bytes)
+                                                } else {
+                                                    "Nothing to save yet"
+                                                },
+                                            )
+                                        }
+                                    },
+                                    modifier = Modifier.width(56.dp),
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                            }
                             QuickMenuRailActionButton(
                                 item = exitGameItem,
                                 onClick = {
@@ -1021,7 +1086,29 @@ fun QuickMenu(
                             Box(
                                 modifier = Modifier.weight(1f),
                             ) {
-                                when (selectedTab) {
+                                // Vapor: tabs glide and fade into each other instead of snapping.
+                                androidx.compose.animation.AnimatedContent(
+                                    targetState = selectedTab,
+                                    transitionSpec = {
+                                        (fadeIn(tween(180)) + androidx.compose.animation.slideInVertically(tween(220)) { it / 12 })
+                                            .togetherWith(fadeOut(tween(120)))
+                                    },
+                                    label = "quickMenuTab",
+                                ) { vaporTab ->
+                                when (vaporTab) {
+                                    QuickMenuTab.SAVES -> {
+                                        if (container != null) {
+                                            app.gamenative.ui.component.quickMenus.SaveSnapshotsQuickMenuTab(
+                                                containerRoot = container.rootDir,
+                                                onLoadAndExit = {
+                                                    if (onItemSelected(QuickMenuAction.EXIT_GAME)) onDismiss()
+                                                },
+                                                focusRequester = savesItemFocusRequester,
+                                                modifier = Modifier.fillMaxSize(),
+                                            )
+                                        }
+                                    }
+
                                     QuickMenuTab.HUD -> {
                                         PerformanceHudQuickMenuTab(
                                             isPerformanceHudEnabled = isPerformanceHudEnabled,
@@ -1226,6 +1313,7 @@ fun QuickMenu(
                                     }
 
                                     else -> Unit
+                                }
                                 }
                             }
                         }

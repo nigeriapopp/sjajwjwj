@@ -5844,6 +5844,13 @@ private suspend fun setupWineSystemFiles(
     val imgVersion = imageFs.getVersion().toString()
     var containerDataChanged = false
 
+    // Vapor: a save snapshot picked in the game menu is put back now, before the game starts.
+    runCatching {
+        app.gamenative.vapor.SaveSnapshots.applyPendingRestore(container.rootDir)?.let {
+            app.gamenative.ui.util.SnackbarManager.show("Loaded save snapshot: ${it.label}")
+        }
+    }
+
     // Vapor: older containers capped the GPU shader cache at 512 MB, so big games kept evicting and
     // recompiling shaders (slower loading screens, more stutter). Raise it to 2 GB once.
     if (container.envVars.contains("MESA_SHADER_CACHE_MAX_SIZE=512MB")) {

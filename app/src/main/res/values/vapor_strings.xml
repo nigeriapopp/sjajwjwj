@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
     <string name="vapor_ok">OK</string>
+    <string name="vapor_saves_title">Saves</string>
+    <string name="vapor_quick_save">Quick save</string>
     <string name="vapor_group_phone">Your phone</string>
     <string name="vapor_group_controls">Controls</string>
     <string name="vapor_group_speed">Speed</string>
