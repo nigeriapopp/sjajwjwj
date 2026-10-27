@@ -102,6 +102,29 @@ fun SettingsGroupPerformance() {
 
     }
 
+    SettingsGroup(title = { Text(stringResource(R.string.vapor_group_speed)) }) {
+        var fastLaunch by rememberSaveable { mutableStateOf(VaporSettings.fastLaunch) }
+        SettingsSwitch(
+            colors = settingsTileColorsAlt(),
+            state = fastLaunch,
+            title = { Text(stringResource(R.string.vapor_fast_launch_title)) },
+            subtitle = { Text(stringResource(R.string.vapor_fast_launch_subtitle)) },
+            onCheckedChange = {
+                fastLaunch = it
+                VaporSettings.fastLaunch = it
+            },
+        )
+        SettingsMenuLink(
+            colors = settingsTileColors(),
+            title = { Text(stringResource(R.string.vapor_repair_title)) },
+            subtitle = { Text(stringResource(R.string.vapor_repair_subtitle)) },
+            onClick = {
+                VaporSettings.repairPending = true
+                app.gamenative.ui.util.SnackbarManager.show(context.getString(R.string.vapor_repair_done))
+            },
+        )
+    }
+
     SettingsGroup(title = { Text(stringResource(R.string.vapor_group_controls)) }) {
         var smartControls by rememberSaveable { mutableStateOf(VaporSettings.smartControls) }
         SettingsSwitch(

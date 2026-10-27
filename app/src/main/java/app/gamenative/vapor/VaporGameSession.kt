@@ -42,6 +42,7 @@ class VaporGameSession private constructor(
             watchThermals()
             watchBattery()
         }
+        VaporFastLaunch.onSessionStarted()
         if (VaporSettings.doNotDisturb) enableDoNotDisturb()
         scheduleFirstLaunchNotices()
         warnIfLowMemory()

@@ -280,9 +280,9 @@ import kotlin.math.roundToInt
 import kotlin.text.lowercase
 import com.winlator.PrefManager as WinlatorPrefManager
 
-// Always re-extract drivers and DXVK on every launch to handle cases of container corruption
-// where games randomly stop working. Set to false once corruption issues are resolved.
-private const val ALWAYS_REEXTRACT = true
+// Upstream re-extracted drivers and DXVK on every launch to recover from container corruption.
+// Vapor Fast Launch reuses them when markers and key files match, does a full unpack after a
+// launch that ended within 30 s (likely crash), and on "Repair game files" (see VaporFastLaunch).
 
 // Guard to prevent duplicate game_exited events when multiple exit triggers fire simultaneously
 private val isExiting = AtomicBoolean(false)
@@ -2489,6 +2489,7 @@ fun XServerScreen(
                                 )
                             }
 
+                            app.gamenative.vapor.VaporFastLaunch.onFilesPrepared()
                             changeWineAudioDriver(xServerState.value.audioDriver, container, ImageFs.find(context))
                             setImagefsContainerVariant(context, container)
                             PluviaApp.xEnvironment = setupXEnvironment(
@@ -5448,8 +5449,9 @@ private fun exit(
         properties = exitProperties,
     )
     CoroutineScope(Dispatchers.IO).launch { SessionReport.recordRun(container, exitProperties) }
-    // Vapor: quick recap of how the session ran.
+    // Vapor: quick recap of how the session ran, and self-healing for Fast Launch.
     runCatching { app.gamenative.vapor.SessionSummary.show(exitProperties) }
+    runCatching { app.gamenative.vapor.VaporFastLaunch.onSessionEnded() }
     runCatching { windowActivity.stop() }
 
     // Store session data in container metadata
@@ -5842,6 +5844,13 @@ private suspend fun setupWineSystemFiles(
     val imgVersion = imageFs.getVersion().toString()
     var containerDataChanged = false
 
+    // Vapor: older containers capped the GPU shader cache at 512 MB, so big games kept evicting and
+    // recompiling shaders (slower loading screens, more stutter). Raise it to 2 GB once.
+    if (container.envVars.contains("MESA_SHADER_CACHE_MAX_SIZE=512MB")) {
+        container.envVars = container.envVars.replace("MESA_SHADER_CACHE_MAX_SIZE=512MB", "MESA_SHADER_CACHE_MAX_SIZE=2GB")
+        container.saveData()
+    }
+
     val appliedContainerVariant = container.getExtra("appliedContainerVariant")
     val appliedWineVersion = container.getExtra("appliedWineVersion")
     val markersMissing = appliedContainerVariant.isEmpty() || appliedWineVersion.isEmpty()
@@ -5885,7 +5894,19 @@ private suspend fun setupWineSystemFiles(
         )
     }
 
-    val needReextract = ALWAYS_REEXTRACT || xServerState.value.dxwrapper != container.getExtra("dxwrapper") || variantChanged || wineVersionChanged
+    // Vapor Fast Launch: DXVK/D8VK only need unpacking again when something changed or a file went missing.
+    val vaporDxMarker = File(imageFs.rootDir, ImageFs.WINEPREFIX + "/" + app.gamenative.vapor.VaporFastLaunch.DX_MARKER)
+    val vaporDxKey = xServerState.value.dxwrapper + "|d8vk-" + DefaultVersion.D8VK + "|" + container.wineVersion
+    val vaporSystem32 = File(imageFs.rootDir, ImageFs.WINEPREFIX + "/drive_c/windows/system32")
+    val vaporDxReusable = xServerState.value.dxwrapper.startsWith("dxvk-") && !container.isOverlay &&
+        app.gamenative.vapor.VaporFastLaunch.isCurrent(
+            vaporDxMarker,
+            vaporDxKey,
+            File(vaporSystem32, "d3d11.dll"),
+            File(vaporSystem32, "dxgi.dll"),
+            File(vaporSystem32, "d3d9.dll"),
+        )
+    val needReextract = !vaporDxReusable || xServerState.value.dxwrapper != container.getExtra("dxwrapper") || variantChanged || wineVersionChanged
 
     Timber.i("needReextract is " + needReextract)
     Timber.i("xServerState.value.dxwrapper is " + xServerState.value.dxwrapper)
@@ -5904,6 +5925,11 @@ private suspend fun setupWineSystemFiles(
         )
         container.putExtra("dxwrapper", xServerState.value.dxwrapper)
         containerDataChanged = true
+        if (xServerState.value.dxwrapper.startsWith("dxvk-") && !container.isOverlay) {
+            app.gamenative.vapor.VaporFastLaunch.mark(vaporDxMarker, vaporDxKey)
+        } else {
+            app.gamenative.vapor.VaporFastLaunch.clear(vaporDxMarker)
+        }
     }
 
     if (xServerState.value.dxwrapper == "cnc-ddraw") envVars.put("CNC_DDRAW_CONFIG_FILE", "C:\\ProgramData\\cnc-ddraw\\ddraw.ini")
@@ -5916,6 +5942,8 @@ private suspend fun setupWineSystemFiles(
         val failedWinComponents = extractWinComponentFiles(context, firstTimeBoot, imageFs, container, containerManager, onExtractFileListener)
         container.putExtra("wincomponents", WinComponentInstall.appliedValue(wincomponents, previousWinComponents, failedWinComponents))
         containerDataChanged = true
+        // Windows components can replace D3D DLLs: make the next launch unpack DXVK again.
+        app.gamenative.vapor.VaporFastLaunch.clear(vaporDxMarker)
     }
     // every launch, not only on a wincomponents change: containers made before the Wine 10 CLSID fix still
     // carry the winegstreamer.dll value, and a Wine version change moves the right DLL under the same toggle
@@ -6479,7 +6507,15 @@ private suspend fun extractGraphicsDriverFiles(
         val configDir = imageFs.configDir
         val sentinel = File(configDir, ".current_graphics_driver")   // lives in shared tree
         val onDiskId = sentinel.takeIf { it.exists() }?.readText() ?: ""
-        val changed = ALWAYS_REEXTRACT || cacheId != container.getExtra("graphicsDriver") || cacheId != onDiskId
+        // Vapor Fast Launch: trust the shared driver sentinel unless the setting is off or a repair was requested.
+        val vaporForceDriver = !app.gamenative.vapor.VaporSettings.fastLaunch ||
+            app.gamenative.vapor.VaporSettings.repairPending ||
+            File(imageFs.rootDir, "usr/share/vulkan/icd.d").list().isNullOrEmpty()
+        val changed = vaporForceDriver || cacheId != container.getExtra("graphicsDriver") || cacheId != onDiskId
+        if (changed) {
+            // The bionic wrapper shares these libs: make it unpack again next time.
+            app.gamenative.vapor.VaporFastLaunch.clear(File(imageFs.rootDir, app.gamenative.vapor.VaporFastLaunch.WRAPPER_MARKER))
+        }
         Timber.i("Changed is " + changed + " will re-extract drivers accordingly.")
         val rootDir = imageFs.rootDir
         envVars.put("vblank_mode", "0")
@@ -6666,8 +6702,28 @@ private suspend fun extractGraphicsDriverFiles(
         // 2. Get the WRAPPER that was last saved to the container's settings.
         val lastInstalledMainWrapper = container.getExtra("lastInstalledMainWrapper")
 
+        // Vapor Fast Launch: the wrapper, extra_libs (~112 MB unpacked) and zink DLLs were unpacked on every
+        // launch. Reuse them while the markers match and the key files are still on disk.
+        val vaporNeedsZink = container.wineVersion.contains("arm64ec") &&
+            GPUInformation.rendererForDriver(null, null)?.contains("Mali") != true
+        val vaporWrapperKey = mainWrapperSelection
+        val vaporPrefixKey = mainWrapperSelection + "|" + container.wineVersion + "|zink=" + vaporNeedsZink
+        val vaporWrapperMarker = File(rootDir, app.gamenative.vapor.VaporFastLaunch.WRAPPER_MARKER)
+        val vaporPrefixMarker = File(rootDir, ImageFs.WINEPREFIX + "/" + app.gamenative.vapor.VaporFastLaunch.PREFIX_WRAPPER_MARKER)
+        val vaporWrapperRequired = mutableListOf(
+            File(rootDir, "usr/lib/libvulkan_wrapper.so"),
+            File(rootDir, "usr/share/vulkan/icd.d/wrapper_icd.aarch64.json"),
+            File(rootDir, "usr/lib/libGL.so.1.5.0"),
+        )
+        if (vaporNeedsZink) {
+            vaporWrapperRequired += File(rootDir, ImageFs.WINEPREFIX + "/drive_c/windows/system32/libgallium_wgl.dll")
+        }
+        val vaporWrapperReusable = !container.isOverlay &&
+            app.gamenative.vapor.VaporFastLaunch.isCurrent(vaporWrapperMarker, vaporWrapperKey, *vaporWrapperRequired.toTypedArray()) &&
+            app.gamenative.vapor.VaporFastLaunch.isCurrent(vaporPrefixMarker, vaporPrefixKey)
+
         // 3. Check if we need to extract a new wrapper file.
-        if (ALWAYS_REEXTRACT || firstTimeBoot || mainWrapperSelection != lastInstalledMainWrapper) {
+        if (!vaporWrapperReusable || firstTimeBoot || mainWrapperSelection != lastInstalledMainWrapper) {
             // We only extract if the selection is actually a wrapper file.
             if (mainWrapperSelection.lowercase(Locale.getDefault()).startsWith("wrapper")) {
                 val wrapperComponentId = mainWrapperSelection.lowercase(Locale.getDefault())
@@ -6693,7 +6749,7 @@ private suspend fun extractGraphicsDriverFiles(
                 }
                 Log.d("XServerDisplayActivity", "First time container boot, extracting extra_libs.tzst")
                 extractGraphicsDriverComponent(context, "extra_libs", rootDir!!)
-                val renderer = GPUInformation.getRenderer(null, null)
+                val renderer = GPUInformation.rendererForDriver(null, null)
                 if (container.wineVersion.contains("arm64ec") && renderer?.contains("Mali") != true) {
                     extractGraphicsDriverComponent(
                         context,
@@ -6701,6 +6757,12 @@ private suspend fun extractGraphicsDriverFiles(
                         File(rootDir, ImageFs.WINEPREFIX + "/drive_c/windows")
                     )
                 }
+                if (!container.isOverlay) {
+                    app.gamenative.vapor.VaporFastLaunch.mark(vaporWrapperMarker, vaporWrapperKey)
+                    app.gamenative.vapor.VaporFastLaunch.mark(vaporPrefixMarker, vaporPrefixKey)
+                }
+                // A glibc container must not trust its own driver marker after we replaced shared libs.
+                app.gamenative.vapor.VaporFastLaunch.clear(File(imageFs.configDir, ".current_graphics_driver"))
             }
         }
 
@@ -6745,7 +6807,7 @@ private suspend fun extractGraphicsDriverFiles(
         envVars.put("WRAPPER_DISABLE_PRESENT_WAIT", disablePresentWait)
 
         val isWrapperGamenative = graphicsDriver.equals("wrapper-gamenative", ignoreCase = true)
-        val vendorId = GPUInformation.getVendorID(null, null)
+        val vendorId = GPUInformation.vendorIdForDriver(null, null)
         val isAdreno = vendorId == 0x5143
         val isXclipse = vendorId == 0x144D
         val excludeBcnCompute = isAdreno || (isWrapperGamenative && isXclipse)

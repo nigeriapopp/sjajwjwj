@@ -108,6 +108,16 @@ object VaporSettings {
         return true
     }
 
+    /** Reuse unpacked graphics files between launches (see VaporFastLaunch). */
+    var fastLaunch: Boolean
+        get() = p()?.getBoolean("fast_launch", true) ?: true
+        set(v) { p()?.edit()?.putBoolean("fast_launch", v)?.apply() }
+
+    /** Set by "Repair game files": the next launch does a full unpack. */
+    var repairPending: Boolean
+        get() = p()?.getBoolean("repair_pending", false) ?: false
+        set(v) { p()?.edit()?.putBoolean("repair_pending", v)?.apply() }
+
     var tierName: String
         get() = p()?.getString(KEY_TIER, "") ?: ""
         set(v) { p()?.edit()?.putString(KEY_TIER, v)?.apply() }

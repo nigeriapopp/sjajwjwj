@@ -3,6 +3,12 @@
     <string name="vapor_ok">OK</string>
     <string name="vapor_group_phone">Your phone</string>
     <string name="vapor_group_controls">Controls</string>
+    <string name="vapor_group_speed">Speed</string>
+    <string name="vapor_fast_launch_title">Fast Launch</string>
+    <string name="vapor_fast_launch_subtitle">Reuse unpacked graphics files instead of rewriting ~170 MB on every launch</string>
+    <string name="vapor_repair_title">Repair game files</string>
+    <string name="vapor_repair_subtitle">If a game stops starting, the next launch unpacks all graphics files fresh</string>
+    <string name="vapor_repair_done">The next game launch will repair its graphics files</string>
     <string name="vapor_group_in_game">In game</string>
     <string name="vapor_share">Share</string>
     <string name="vapor_playtime_title">Play-time reminders</string>

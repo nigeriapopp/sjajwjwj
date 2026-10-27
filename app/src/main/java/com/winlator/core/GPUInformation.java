@@ -28,6 +28,12 @@ public abstract class GPUInformation {
     // key forces a clean recompute.
     private static final String RENDERER_PREF_KEY = "gpu_renderer2";
 
+    // Vapor: GPU strings never change while the app runs. Keeping them in memory avoids a blocking
+    // DataStore read every time one of the many isAdrenoXxx() checks runs during startup and launch.
+    private static volatile String sRenderer;
+    private static volatile String sVendor;
+    private static volatile String sVersion;
+
     static {
         System.loadLibrary("extras");
     }
@@ -127,30 +133,36 @@ public abstract class GPUInformation {
     }
 
     public static String getRenderer(Context context) {
+        String cached = sRenderer;
+        if (cached != null && !cached.isEmpty()) return cached;
         PrefManager.init(context);
         String value = PrefManager.getString(RENDERER_PREF_KEY, "");
-        if (!value.isEmpty()) return value;
+        if (!value.isEmpty()) return sRenderer = value;
 
         ArrayMap<String, String> gpuInfo = loadGPUInformation(context);
-        return gpuInfo.get("renderer");
+        return sRenderer = gpuInfo.get("renderer");
     }
 
     public static String getVendor(Context context) {
+        String cached = sVendor;
+        if (cached != null && !cached.isEmpty()) return cached;
         PrefManager.init(context);
         String value = PrefManager.getString("gpu_vendor", "");
-        if (!value.isEmpty()) return value;
+        if (!value.isEmpty()) return sVendor = value;
 
         ArrayMap<String, String> gpuInfo = loadGPUInformation(context);
-        return gpuInfo.get("vendor");
+        return sVendor = gpuInfo.get("vendor");
     }
 
     public static String getVersion(Context context) {
+        String cached = sVersion;
+        if (cached != null && !cached.isEmpty()) return cached;
         PrefManager.init(context);
         String value = PrefManager.getString("gpu_version", "");
-        if (!value.isEmpty()) return value;
+        if (!value.isEmpty()) return sVersion = value;
 
         ArrayMap<String, String> gpuInfo = loadGPUInformation(context);
-        return gpuInfo.get("version");
+        return sVersion = gpuInfo.get("version");
     }
 
     public static boolean isAdreno6xx(Context context) {
@@ -202,14 +214,40 @@ public abstract class GPUInformation {
 
 
     public static boolean isAdrenoGPU(Context context) {
-        return getRenderer(null, context).toLowerCase().contains("adreno");
+        return rendererForDriver(null, context).toLowerCase().contains("adreno");
+    }
+
+    // Vapor: the native queries below create a whole Vulkan instance per call. The answer for a given
+    // driver never changes while the app runs, so remember it.
+    private static final java.util.concurrent.ConcurrentHashMap<String, String> sDriverRenderer =
+        new java.util.concurrent.ConcurrentHashMap<>();
+    private static final java.util.concurrent.ConcurrentHashMap<String, Integer> sDriverVendor =
+        new java.util.concurrent.ConcurrentHashMap<>();
+
+    public static String rendererForDriver(String driverName, Context context) {
+        String key = driverName == null ? "" : driverName;
+        String cached = sDriverRenderer.get(key);
+        if (cached != null) return cached;
+        String value = getRenderer(driverName, context);
+        if (value == null) value = "";
+        sDriverRenderer.put(key, value);
+        return value;
+    }
+
+    public static int vendorIdForDriver(String driverName, Context context) {
+        String key = driverName == null ? "" : driverName;
+        Integer cached = sDriverVendor.get(key);
+        if (cached != null) return cached;
+        int value = getVendorID(driverName, context);
+        sDriverVendor.put(key, value);
+        return value;
     }
 
     public static boolean isDriverSupported(String driverName, Context context) {
         if (!isAdrenoGPU(context) && !driverName.equals("System"))
             return false;
 
-        String renderer = getRenderer(driverName, context);
+        String renderer = rendererForDriver(driverName, context);
 
         return !renderer.toLowerCase().contains("unknown");
     }

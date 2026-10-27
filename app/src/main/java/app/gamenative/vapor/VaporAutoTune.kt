@@ -45,6 +45,13 @@ object VaporAutoTune {
             if (profile.tier == DeviceTier.LOW && PrefManager.screenSize == "1280x720") {
                 PrefManager.screenSize = plan.screenSize
             }
+            // Strong phones: allow the "blazing" download tier (more parallel requests and unpack workers)
+            // when the user is still on the stock "fast" tier.
+            if ((profile.tier == DeviceTier.FLAGSHIP || profile.tier == DeviceTier.HIGH) &&
+                profile.snapshot.cpuCores >= 8 && PrefManager.downloadSpeed == 24
+            ) {
+                PrefManager.downloadSpeed = 32
+            }
             // Turn the in-game FPS counter on the first time only; later runs leave the user's choice.
             if (VaporSettings.autoTuneVersion == 0 && plan.showFps) {
                 PrefManager.showFps = true
