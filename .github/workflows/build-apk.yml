@@ -55,6 +55,11 @@ jobs:
           else
             echo "No VAPOR_SIGNING_KEY_B64 secret: using a fresh key for this build"
           fi
+          if [ ! -f ~/.android/debug.keystore ]; then
+            keytool -genkeypair -keystore ~/.android/debug.keystore -alias androiddebugkey \
+              -storepass android -keypass android -keyalg RSA -keysize 2048 -validity 10000 \
+              -dname "CN=Android Debug,O=Android,C=US"
+          fi
 
       # No analytics keys: the secrets plugin copies values verbatim into BuildConfig,
       # and without them the app's own fallback ("" key) keeps analytics off.
