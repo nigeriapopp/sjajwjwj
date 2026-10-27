@@ -85,6 +85,24 @@ object VaporSettings {
         get() = p()?.getBoolean("heat_step_down", false) ?: false
         set(v) { p()?.edit()?.putBoolean("heat_step_down", v)?.apply() }
 
+    /** Silence notifications while playing (needs Do Not Disturb access). */
+    var doNotDisturb: Boolean
+        get() = p()?.getBoolean("do_not_disturb", false) ?: false
+        set(v) { p()?.edit()?.putBoolean("do_not_disturb", v)?.apply() }
+
+    var sessionsPlayed: Int
+        get() = p()?.getInt("sessions_played", 0) ?: 0
+        set(v) { p()?.edit()?.putInt("sessions_played", v)?.apply() }
+
+    /** Records that [gameKey] has been launched. Returns true the first time. */
+    fun markGamePlayed(gameKey: String): Boolean {
+        val prefs = p() ?: return false
+        val key = "played_$gameKey"
+        if (prefs.getBoolean(key, false)) return false
+        prefs.edit().putBoolean(key, true).apply()
+        return true
+    }
+
     var tierName: String
         get() = p()?.getString(KEY_TIER, "") ?: ""
         set(v) { p()?.edit()?.putString(KEY_TIER, v)?.apply() }

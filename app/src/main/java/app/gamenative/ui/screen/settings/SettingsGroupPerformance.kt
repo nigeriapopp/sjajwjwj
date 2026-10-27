@@ -123,6 +123,31 @@ fun SettingsGroupPerformance() {
             },
         )
 
+        var dnd by rememberSaveable { mutableStateOf(VaporSettings.doNotDisturb) }
+        SettingsSwitch(
+            colors = settingsTileColorsAlt(),
+            state = dnd,
+            title = { Text(stringResource(R.string.vapor_dnd_title)) },
+            subtitle = { Text(stringResource(R.string.vapor_dnd_subtitle)) },
+            onCheckedChange = {
+                dnd = it
+                VaporSettings.doNotDisturb = it
+                if (it) {
+                    val nm = context.getSystemService(android.content.Context.NOTIFICATION_SERVICE)
+                        as? android.app.NotificationManager
+                    if (nm != null && !nm.isNotificationPolicyAccessGranted) {
+                        app.gamenative.ui.util.SnackbarManager.show(context.getString(R.string.vapor_dnd_grant))
+                        runCatching {
+                            context.startActivity(
+                                android.content.Intent(android.provider.Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS)
+                                    .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK),
+                            )
+                        }
+                    }
+                }
+            },
+        )
+
         var sustained by rememberSaveable { mutableStateOf(VaporSettings.sustainedPerformance) }
         SettingsSwitch(
             colors = settingsTileColorsAlt(),

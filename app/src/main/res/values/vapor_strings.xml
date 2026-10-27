@@ -14,6 +14,9 @@
     <string name="vapor_ghost_controls_subtitle">Touch controls fade after 4 seconds untouched so you can see the game</string>
     <string name="vapor_heat_step_title">Heat step-down</string>
     <string name="vapor_heat_step_subtitle">When the phone overheats, drop to 45 FPS (30 if critical) until it cools, instead of stuttering</string>
+    <string name="vapor_dnd_title">Do Not Disturb while playing</string>
+    <string name="vapor_dnd_subtitle">Silences notifications during games and turns them back on when you exit</string>
+    <string name="vapor_dnd_grant">Allow Vapor in the list so it can turn on Do Not Disturb</string>
     <string name="vapor_sustained_title">Stable FPS mode</string>
     <string name="vapor_sustained_subtitle">Android sustained-performance mode: slightly lower peak, much less throttling in long sessions</string>
     <string name="vapor_refresh_title">Lock screen to max refresh rate</string>

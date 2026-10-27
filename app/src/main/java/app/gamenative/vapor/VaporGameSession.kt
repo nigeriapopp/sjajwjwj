@@ -7,6 +7,9 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.os.BatteryManager
 import android.os.Build
+import android.app.NotificationManager
+import android.os.Handler
+import android.os.Looper
 import android.os.PowerManager
 import app.gamenative.ui.util.SnackbarManager
 import java.util.concurrent.Executor
@@ -17,13 +20,18 @@ import timber.log.Timber
  * max-refresh-rate lock, and warnings when the phone overheats or the battery runs low.
  * Everything is undone in [stop].
  */
-class VaporGameSession private constructor(private val activity: Activity) {
+class VaporGameSession private constructor(
+    private val activity: Activity,
+    private val gameKey: String,
+) {
     private var thermalListener: PowerManager.OnThermalStatusChangedListener? = null
     private var batteryReceiver: BroadcastReceiver? = null
     private var sustainedEnabled = false
     private var previousModeId: Int? = null
     private var lastThermalWarned = 0
     private var batteryWarned = false
+    private var previousInterruptionFilter: Int? = null
+    private val handler = Handler(Looper.getMainLooper())
 
     private fun begin() {
         VaporSettings.init(activity)
@@ -32,6 +40,32 @@ class VaporGameSession private constructor(private val activity: Activity) {
         if (VaporSettings.thermalWarnings) {
             watchThermals()
             watchBattery()
+        }
+        if (VaporSettings.doNotDisturb) enableDoNotDisturb()
+        scheduleFirstLaunchNotices()
+    }
+
+    /** First time a game runs: explain shader stutter. First few sessions overall: one tip each. */
+    private fun scheduleFirstLaunchNotices() {
+        val firstRunOfGame = VaporSettings.markGamePlayed(gameKey)
+        val tip = VaporTips.next(VaporSettings.sessionsPlayed)
+        VaporSettings.sessionsPlayed = VaporSettings.sessionsPlayed + 1
+        if (firstRunOfGame) {
+            handler.postDelayed({ SnackbarManager.show(VaporTips.SHADER_NOTICE) }, 6_000L)
+        }
+        if (tip != null) {
+            handler.postDelayed({ SnackbarManager.show(tip) }, if (firstRunOfGame) 16_000L else 6_000L)
+        }
+    }
+
+    private fun enableDoNotDisturb() {
+        try {
+            val nm = activity.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return
+            if (!nm.isNotificationPolicyAccessGranted) return
+            previousInterruptionFilter = nm.currentInterruptionFilter
+            nm.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_PRIORITY)
+        } catch (e: Exception) {
+            Timber.w(e, "[Vapor] do not disturb unavailable")
         }
     }
 
@@ -117,6 +151,14 @@ class VaporGameSession private constructor(private val activity: Activity) {
     }
 
     fun stop() {
+        handler.removeCallbacksAndMessages(null)
+        previousInterruptionFilter?.let { filter ->
+            try {
+                (activity.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager)
+                    ?.setInterruptionFilter(filter)
+            } catch (e: Exception) { }
+        }
+        previousInterruptionFilter = null
         try {
             if (sustainedEnabled) activity.window.setSustainedPerformanceMode(false)
         } catch (e: Exception) { }
@@ -146,6 +188,7 @@ class VaporGameSession private constructor(private val activity: Activity) {
     }
 
     companion object {
-        fun start(activity: Activity): VaporGameSession = VaporGameSession(activity).also { it.begin() }
+        fun start(activity: Activity, gameKey: String): VaporGameSession =
+            VaporGameSession(activity, gameKey).also { it.begin() }
     }
 }

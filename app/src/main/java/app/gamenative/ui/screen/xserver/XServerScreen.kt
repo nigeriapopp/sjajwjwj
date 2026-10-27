@@ -571,7 +571,7 @@ fun XServerScreen(
 
     // Vapor: stable-FPS mode, refresh-rate lock, heat and battery warnings while in game.
     DisposableEffect(activity) {
-        val vaporSession = activity?.let { app.gamenative.vapor.VaporGameSession.start(it) }
+        val vaporSession = activity?.let { app.gamenative.vapor.VaporGameSession.start(it, appId) }
         ui.controllerNotices.start()
         onDispose {
             vaporSession?.stop()
