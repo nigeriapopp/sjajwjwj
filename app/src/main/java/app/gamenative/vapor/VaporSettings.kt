@@ -70,6 +70,16 @@ object VaporSettings {
         get() = p()?.getBoolean(KEY_BATTERY_SAVER, true) ?: true
         set(v) { p()?.edit()?.putBoolean(KEY_BATTERY_SAVER, v)?.apply() }
 
+    /** Hide on-screen controls while a controller is used; bring them back on touch. */
+    var smartControls: Boolean
+        get() = p()?.getBoolean("smart_controls", true) ?: true
+        set(v) { p()?.edit()?.putBoolean("smart_controls", v)?.apply() }
+
+    /** Fade on-screen controls after a few seconds without touching them. */
+    var ghostControls: Boolean
+        get() = p()?.getBoolean("ghost_controls", true) ?: true
+        set(v) { p()?.edit()?.putBoolean("ghost_controls", v)?.apply() }
+
     var tierName: String
         get() = p()?.getString(KEY_TIER, "") ?: ""
         set(v) { p()?.edit()?.putString(KEY_TIER, v)?.apply() }

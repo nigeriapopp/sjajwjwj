@@ -87,6 +87,30 @@ fun SettingsGroupPerformance() {
             },
         )
 
+        var smartControls by rememberSaveable { mutableStateOf(VaporSettings.smartControls) }
+        SettingsSwitch(
+            colors = settingsTileColorsAlt(),
+            state = smartControls,
+            title = { Text(stringResource(R.string.vapor_smart_controls_title)) },
+            subtitle = { Text(stringResource(R.string.vapor_smart_controls_subtitle)) },
+            onCheckedChange = {
+                smartControls = it
+                VaporSettings.smartControls = it
+            },
+        )
+
+        var ghostControls by rememberSaveable { mutableStateOf(VaporSettings.ghostControls) }
+        SettingsSwitch(
+            colors = settingsTileColorsAlt(),
+            state = ghostControls,
+            title = { Text(stringResource(R.string.vapor_ghost_controls_title)) },
+            subtitle = { Text(stringResource(R.string.vapor_ghost_controls_subtitle)) },
+            onCheckedChange = {
+                ghostControls = it
+                VaporSettings.ghostControls = it
+            },
+        )
+
         var sustained by rememberSaveable { mutableStateOf(VaporSettings.sustainedPerformance) }
         SettingsSwitch(
             colors = settingsTileColorsAlt(),

@@ -84,6 +84,12 @@ internal class XServerScreenState(container: Container, context: Context) {
     var performanceHudTouchDownRawY by mutableStateOf(0f)
     var performanceHudDragOffsetX by mutableStateOf(0f)
     var performanceHudDragOffsetY by mutableStateOf(0f)
+
+    // Vapor: hide controls while a controller is used, show on touch, fade when idle.
+    val smartControls = app.gamenative.vapor.SmartControls()
+    val ghostControls = app.gamenative.vapor.GhostControls { app.gamenative.PluviaApp.inputControlsView }
+    val controllerNotices = app.gamenative.vapor.ControllerNotices()
+    var vaporDeviceScans = 0
 }
 
 internal fun loadPerformanceHudConfig(): PerformanceHudConfig {

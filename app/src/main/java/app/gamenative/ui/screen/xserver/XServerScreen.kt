@@ -572,7 +572,12 @@ fun XServerScreen(
     // Vapor: stable-FPS mode, refresh-rate lock, heat and battery warnings while in game.
     DisposableEffect(activity) {
         val vaporSession = activity?.let { app.gamenative.vapor.VaporGameSession.start(it) }
-        onDispose { vaporSession?.stop() }
+        ui.controllerNotices.start()
+        onDispose {
+            vaporSession?.stop()
+            ui.ghostControls.reset()
+            ui.controllerNotices.stop()
+        }
     }
 
     val suspendPolicy = remember(container.id) { container.suspendPolicy }
@@ -1079,6 +1084,8 @@ fun XServerScreen(
         ui.hasPhysicalController = controllerManager.getDetectedDevices().isNotEmpty()
         ui.controllerSlotStatusVersion++
         ui.xServerView?.getxServer()?.winHandler?.refreshControllerMappingsForHotplug()
+        // Vapor: "Xbox controller connected · Player 1 · 80% battery"
+        ui.controllerNotices.onDevicesScanned(firstScan = ui.vaporDeviceScans++ == 0)
 
         if (!ui.usingScreenMirror &&
             !ui.hasInternalTouchpad && !ui.hasPhysicalMouse && !ui.hasPhysicalKeyboard && !ui.hasPhysicalController &&
@@ -1228,6 +1235,9 @@ fun XServerScreen(
             }
 
             QuickMenuAction.INPUT_CONTROLS -> {
+                // The player chose explicitly: Smart Controls leaves visibility alone for this session.
+                ui.smartControls.onUserToggle()
+                ui.ghostControls.reset()
                 if (ui.areControlsVisible) {
                     if (PrefManager.usageAnalyticsEnabled) PostHog.capture(event = "onscreen_controller_disabled")
                     hideInputControls()
@@ -1688,6 +1698,9 @@ fun XServerScreen(
             var handled = false
             if (isGamepad) {
                 val winHandler = ui.xServerView!!.getxServer().winHandler
+                if (it.event.action == KeyEvent.ACTION_DOWN && it.event.repeatCount == 0) {
+                    vaporOnGamepadInput(ui, container)
+                }
                 if (it.event.action == KeyEvent.ACTION_DOWN && it.event.repeatCount == 0 &&
                     ControllerManager.getInstance().noteGamepadButton(it.event.device.id)
                 ) {
@@ -1745,6 +1758,9 @@ fun XServerScreen(
             if (isGamepad && it.event != null) {
                 val winHandler = ui.xServerView!!.getxServer().winHandler
                 ControllerManager.getInstance().noteGamepadActivity(it.event)
+                if (app.gamenative.vapor.SmartControls.isDeliberateMotion(it.event)) {
+                    vaporOnGamepadInput(ui, container)
+                }
                 val assignedSlot = ControllerManager.getInstance().getSlotForDevice(it.event.device.id)
                 if (assignedSlot > 0) {
                     handled = winHandler.onGenericMotionEvent(it.event)
@@ -2010,6 +2026,9 @@ fun XServerScreen(
                 if (isPortrait) {
                     ui.gameRoot?.dispatchTouchEvent(event)
                 } else {
+                    // Vapor Smart Controls: a touch brings hidden controls back; that whole
+                    // gesture is swallowed so picking up the phone never presses anything.
+                    if (vaporOnTouch(ui, container, event)) return@pointerInteropFilter true
                     val controlsHandled = if (ui.areControlsVisible) {
                         PluviaApp.inputControlsView?.onTouchEvent(event) ?: false
                     } else {
@@ -3687,6 +3706,71 @@ private fun ensureVirtualGamepadSlot(
         // Tell WinHandler to update its internal state.
         winHandler.refreshControllerMappings()
     }
+}
+
+/** Menus, editors and touch-only modes own the controls; Smart Controls stays out of the way. */
+private fun vaporControlsBlocked(ui: XServerScreenState, container: Container): Boolean =
+    ui.showQuickMenu || ui.showElementEditor || ui.keepPausedForEditor || ui.isEditMode ||
+        ui.isTouchscreenModeActive || container.isPortraitMode
+
+/** A controller button or stick was used: hide the touch controls and give the controller back Player 1. */
+private fun vaporOnGamepadInput(ui: XServerScreenState, container: Container) {
+    val action = ui.smartControls.onGamepadInput(ui.areControlsVisible, vaporControlsBlocked(ui, container))
+    if (action != app.gamenative.vapor.SmartControls.Action.HIDE) return
+    ui.ghostControls.reset()
+    hideInputControls()
+    ui.areControlsVisible = false
+    ControllerManager.getInstance().autoAssignConnectedDevices()
+    ui.xServerView?.getxServer()?.winHandler?.refreshControllerMappingsForHotplug()
+}
+
+/**
+ * Handles a touch for Smart Controls and ghost mode.
+ * @return true when the touch was consumed (it revealed the controls).
+ */
+private fun vaporOnTouch(ui: XServerScreenState, container: Container, event: MotionEvent): Boolean {
+    val smart = ui.smartControls
+    if (smart.swallowingGesture) {
+        if (event.actionMasked == MotionEvent.ACTION_UP || event.actionMasked == MotionEvent.ACTION_CANCEL) {
+            smart.swallowingGesture = false
+        }
+        return true
+    }
+    if (event.actionMasked == MotionEvent.ACTION_DOWN) {
+        val action = smart.onTouchDown(
+            controlsVisible = ui.areControlsVisible,
+            hasController = ui.hasPhysicalController,
+            blocked = vaporControlsBlocked(ui, container),
+        )
+        if (action == app.gamenative.vapor.SmartControls.Action.SHOW) {
+            if (vaporShowControls(ui, container)) {
+                return true
+            }
+            smart.swallowingGesture = false
+        }
+    }
+    if (ui.areControlsVisible) ui.ghostControls.onTouch()
+    return false
+}
+
+/** Shows the container's current touch layout with a short fade-in. Returns false if there is none. */
+private fun vaporShowControls(ui: XServerScreenState, container: Container): Boolean {
+    val manager = PluviaApp.inputControlsManager ?: return false
+    val profiles = manager.getProfiles(false)
+    if (profiles.isEmpty()) return false
+    val profileId = container.getExtra("profileId", "0").toIntOrNull() ?: 0
+    val target = (if (profileId != 0) manager.getProfile(profileId) else null)
+        ?: manager.getProfile(0) ?: profiles.getOrNull(2) ?: profiles.first()
+    val winHandler = ui.xServerView?.getxServer()?.winHandler ?: return false
+    showInputControls(target, winHandler, container)
+    ui.areControlsVisible = true
+    PluviaApp.inputControlsView?.let { view ->
+        view.animate().cancel()
+        view.alpha = 0f
+        view.animate().alpha(1f).setDuration(180L).start()
+    }
+    ui.ghostControls.onTouch()
+    return true
 }
 
 private fun hideInputControls() {
