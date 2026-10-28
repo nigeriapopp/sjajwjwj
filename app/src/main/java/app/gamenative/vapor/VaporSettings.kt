@@ -159,6 +159,20 @@ object VaporSettings {
         prefs.edit().putInt("crashes_$key", prefs.getInt("crashes_$key", 0) + 1).apply()
     }
 
+    fun isSafeModeOn(key: String): Boolean = p()?.getBoolean("safemode_$key", false) ?: false
+
+    fun setSafeModeOn(key: String, on: Boolean) {
+        p()?.edit()?.putBoolean("safemode_$key", on)?.apply()
+    }
+
+    /** Forget all recorded crashes: games leave Crash Guard safe mode on their next launch. */
+    fun resetCrashes() {
+        val prefs = p() ?: return
+        val e = prefs.edit()
+        prefs.all.keys.filter { it.startsWith("crashes_") }.forEach { e.remove(it) }
+        e.apply()
+    }
+
     /** Keep a rolling automatic save backup after each session. */
     var autoSaveBackup: Boolean
         get() = p()?.getBoolean("auto_save_backup", true) ?: true

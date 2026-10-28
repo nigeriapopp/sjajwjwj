@@ -5469,7 +5469,11 @@ private fun exit(
     // Vapor: quick recap of how the session ran, and self-healing for Fast Launch.
     runCatching { app.gamenative.vapor.SessionSummary.show(exitProperties) }
     runCatching {
-        if (app.gamenative.vapor.VaporFastLaunch.onSessionEnded()) app.gamenative.vapor.VaporSettings.recordCrash(container.id)
+        // Only the game ending by itself can be a crash; quitting from the menu never counts.
+        val endedOnItsOwn = reason == "guest_terminated" || reason == "processes_exited"
+        if (app.gamenative.vapor.VaporFastLaunch.onSessionEnded(endedOnItsOwn)) {
+            app.gamenative.vapor.VaporSettings.recordCrash(container.id)
+        }
     }
     // Vapor: rolling save backup once Wine has shut down (skipped when no save changed).
     if (app.gamenative.vapor.VaporSettings.autoSaveBackup) {

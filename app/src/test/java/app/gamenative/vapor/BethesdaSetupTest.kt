@@ -87,4 +87,22 @@ class BethesdaSetupTest {
         assertEquals("icu=n;winegstreamer=d", BethesdaSetup.withoutGstreamer("icu=n;"))
         assertEquals("winegstreamer=n", BethesdaSetup.withoutGstreamer("winegstreamer=n"))
     }
+
+    @Test
+    fun fastestCoresByClock() {
+        // S22 (8 Gen 1): 4x A510 1.78 GHz, 3x A710 2.49 GHz, 1x X2 2.99 GHz
+        val s22 = listOf(1785600L, 1785600, 1785600, 1785600, 2496000, 2496000, 2496000, 2995200)
+        assertEquals("4:4,5,6,7", BethesdaSetup.cpuTopologyFromFreqs(s22))
+        // Big cores listed first on some chips
+        val odd = listOf(2800000L, 2800000, 1800000, 1800000, 1800000, 1800000, 2400000, 2400000)
+        assertEquals("4:0,1,6,7", BethesdaSetup.cpuTopologyFromFreqs(odd))
+        assertEquals("4:4,5,6,7", BethesdaSetup.cpuTopologyFromFreqs(List(8) { 0L }))
+    }
+
+    @Test
+    fun crashGuardResetRestoresOverrides() {
+        assertEquals("icu=n", BethesdaSetup.withGstreamer("icu=n;winegstreamer=d"))
+        assertEquals("", BethesdaSetup.withGstreamer("winegstreamer=d"))
+        assertEquals("winegstreamer=n", BethesdaSetup.withGstreamer("winegstreamer=n"))
+    }
 }

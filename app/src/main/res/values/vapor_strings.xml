@@ -57,4 +57,7 @@
     <string name="vapor_presets_reset_done">Presets will be re-applied on each game\'s next launch</string>
     <string name="vapor_autosave_title">Automatic save backups</string>
     <string name="vapor_autosave_subtitle">After each session, keep a copy of changed saves (newest 3, in the game menu → Saves)</string>
+    <string name="vapor_crash_reset_title">Reset Crash Guard</string>
+    <string name="vapor_crash_reset_subtitle">Games that crashed run in safe mode (music may be off). Reset to try them normally again</string>
+    <string name="vapor_crash_reset_done">Crash Guard reset. Games start normally on their next launch</string>
 </resources>

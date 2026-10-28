@@ -3,6 +3,7 @@ package app.gamenative.vapor
 import java.io.File
 import java.nio.file.Files
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -23,6 +24,7 @@ class PhoneGraphicsPresetsTest {
         assertTrue(ini.contains("sg.ResolutionQuality=75"))
         assertTrue(ini.contains("sg.ShadowQuality=0"))
         assertTrue(ini.contains("FrameRateLimit=60.000000"))
+        assertTrue(ini.contains("Version=5"))
         assertTrue(File(user, "AppData/Local/MyGame/Saved/Config/Windows/GameUserSettings.ini").isFile)
     }
 
@@ -39,6 +41,7 @@ class PhoneGraphicsPresetsTest {
         assertTrue(text.contains("sg.ShadowQuality=0"))
         assertTrue(text.contains("Keep=1"))
         assertTrue(text.contains("sg.ResolutionQuality=50"))
+        assertFalse(text.contains("Version="))
     }
 
     @Test

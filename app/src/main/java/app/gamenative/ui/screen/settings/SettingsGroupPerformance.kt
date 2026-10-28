@@ -198,6 +198,15 @@ fun SettingsGroupPerformance() {
         )
         SettingsMenuLink(
             colors = settingsTileColors(),
+            title = { Text(stringResource(R.string.vapor_crash_reset_title)) },
+            subtitle = { Text(stringResource(R.string.vapor_crash_reset_subtitle)) },
+            onClick = {
+                VaporSettings.resetCrashes()
+                app.gamenative.ui.util.SnackbarManager.show(context.getString(R.string.vapor_crash_reset_done))
+            },
+        )
+        SettingsMenuLink(
+            colors = settingsTileColors(),
             title = { Text(stringResource(R.string.vapor_crash_log_title)) },
             subtitle = { Text(stringResource(R.string.vapor_crash_log_subtitle)) },
             onClick = {

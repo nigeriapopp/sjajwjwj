@@ -20,6 +20,10 @@ performance features on top. All credit for the emulation stack goes to those pr
 4. Open Vapor, sign in to Steam (QR code or username + password + Steam Guard).
 5. Pick a game → **Install** → wait for the download → **Play**.
 
+**"App not installed" / "package conflicts with an existing package"?** Your phone has a Vapor (or GameNative)
+signed with a different key. Uninstall it, then install the new APK. Also check you have about 2 GB free: the APK is
+~580 MB and Android needs room to unpack it.
+
 First launch downloads the Windows runtime (Wine/Proton, drivers, DXVK) once — use Wi-Fi.
 
 ## How it works
@@ -110,7 +114,8 @@ when a controller's battery drops below 15%.
 - missing settings files are created from the game's own Low/Medium preset, windowed at exactly the screen size
   Vapor renders (fullscreen mode switches are a classic Wine crash), with phone-friendly shadows and no MSAA;
 - if the game still crashes, the next launch turns off Wine's media decoder (winegstreamer) for that game, the
-  best-known fix for Fallout 3 / Oblivion crashes under Wine (in-game music may be silent in that mode).
+  best-known fix for Fallout 3 / Oblivion crashes under Wine (in-game music may be silent in that mode). Quitting from
+the menu never counts as a crash. Settings → Performance → **Reset Crash Guard** turns safe mode off again.
 
 **First launches** — a notice that early shader stutter is normal, plus one short tip in each of your first 3 sessions.
 

@@ -98,7 +98,11 @@ object PhoneGraphicsPresets {
             // UE4 shipping builds use WindowsNoEditor, UE5 uses Windows: write both.
             for (platform in listOf("WindowsNoEditor", "Windows")) {
                 val ini = File(configRoot, "$platform/GameUserSettings.ini")
-                var text = if (ini.isFile) ini.readText() else ""
+                val isNew = !ini.isFile
+                var text = if (isNew) "" else ini.readText()
+                // Unreal wipes the file back to defaults when Version is missing or stale; 5 is the
+                // engine's settings version since UE 4.x. Only set on files Vapor creates.
+                if (isNew) text = IniEdit.set(text, "/Script/Engine.GameUserSettings", "Version", "5")
                 unrealScalability(tier).forEach { (k, v) -> text = IniEdit.set(text, "ScalabilityGroups", k, v) }
                 unrealGameSettings(fpsCap).forEach { (k, v) ->
                     text = IniEdit.set(text, "/Script/Engine.GameUserSettings", k, v)

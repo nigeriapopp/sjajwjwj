@@ -45,17 +45,29 @@ class BethesdaSetupFix(private val spec: BethesdaSetup.Spec) : GameFix {
             val env = EnvVars(container.envVars)
             var envChanged = false
             if (!env.has("WINE_CPU_TOPOLOGY")) {
-                env.put("WINE_CPU_TOPOLOGY", BethesdaSetup.cpuTopology(Runtime.getRuntime().availableProcessors()))
+                env.put("WINE_CPU_TOPOLOGY", BethesdaSetup.cpuTopologyFromFreqs(readMaxFreqs()))
                 envChanged = true
             }
-            // Crash Guard step 2: after this game crashed once, turn off Wine's media decoder for it
+            // 32-bit game: let it use 4 GB instead of 2 GB (DXVK's allocations otherwise run it out of
+            // address space mid-game). Proton reads this; patching the exe instead breaks New Vegas.
+            if (!env.has("WINE_LARGE_ADDRESS_AWARE")) {
+                env.put("WINE_LARGE_ADDRESS_AWARE", "1")
+                envChanged = true
+            }
+            // Crash Guard: after this game crashed, turn off Wine's media decoder for it
             // (costs in-game music/radio, but is the best-known fix for these crashes under Wine).
-            if (VaporSettings.crashCount(container.id) >= 1) {
-                val current = if (env.has("WINEDLLOVERRIDES")) env.get("WINEDLLOVERRIDES") else ""
-                val updated = BethesdaSetup.withoutGstreamer(current)
-                if (updated != current) {
-                    env.put("WINEDLLOVERRIDES", updated)
-                    envChanged = true
+            val current = if (env.has("WINEDLLOVERRIDES")) env.get("WINEDLLOVERRIDES") else ""
+            val updated = when {
+                VaporSettings.crashCount(container.id) >= 1 -> BethesdaSetup.withoutGstreamer(current)
+                // Crash Guard was reset: give the music back (only if Vapor turned it off).
+                VaporSettings.isSafeModeOn(container.id) -> BethesdaSetup.withGstreamer(current)
+                else -> current
+            }
+            if (updated != current) {
+                if (updated.isEmpty()) env.remove("WINEDLLOVERRIDES") else env.put("WINEDLLOVERRIDES", updated)
+                envChanged = true
+                VaporSettings.setSafeModeOn(container.id, updated.contains("winegstreamer=d"))
+                if (updated.contains("winegstreamer=d")) {
                     Timber.tag("GameFixes").i("Vapor: crash safe mode for $gameId: winegstreamer off")
                     app.gamenative.ui.util.SnackbarManager.show(
                         "Crash Guard: safe mode on for this game (music may be off). Settings → Performance to share the crash log.",
@@ -79,5 +91,14 @@ class BethesdaSetupFix(private val spec: BethesdaSetup.Spec) : GameFix {
         }.onFailure { Timber.tag("GameFixes").w(it, "Vapor: ini setup failed") }
 
         return true
+    }
+
+    private fun readMaxFreqs(): List<Long> {
+        val n = Runtime.getRuntime().availableProcessors()
+        return (0 until n).map { i ->
+            runCatching {
+                File("/sys/devices/system/cpu/cpu$i/cpufreq/cpuinfo_max_freq").readText().trim().toLong()
+            }.getOrDefault(0L)
+        }
     }
 }

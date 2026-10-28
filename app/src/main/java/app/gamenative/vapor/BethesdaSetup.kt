@@ -46,6 +46,24 @@ object BethesdaSetup {
         return "4:" + (cores - 4 until cores).joinToString(",")
     }
 
+    /**
+     * Same, but picks the 4 cores with the highest max clock ([maxFreqs] per core, 0 = unknown).
+     * Falls back to [cpuTopology] when the clocks can't be read.
+     */
+    fun cpuTopologyFromFreqs(maxFreqs: List<Long>): String {
+        if (maxFreqs.size <= 4 || maxFreqs.all { it <= 0L }) return cpuTopology(maxFreqs.size)
+        val fastest = maxFreqs.indices
+            .sortedWith(compareByDescending<Int> { maxFreqs[it] }.thenByDescending { it })
+            .take(4)
+            .sorted()
+        return "4:" + fastest.joinToString(",")
+    }
+
+    /** Removes the winegstreamer=d entry Crash Guard added (after "Reset Crash Guard"). */
+    fun withGstreamer(overrides: String): String =
+        overrides.split(';').filter { it.isNotBlank() && !it.trim().equals("winegstreamer=d", ignoreCase = true) }
+            .joinToString(";")
+
     /** Adds winegstreamer=d (Wine's media decoder: a known Fallout 3 / Oblivion crash) to a DLL override list. */
     fun withoutGstreamer(overrides: String): String {
         if (overrides.contains("winegstreamer", ignoreCase = true)) return overrides
