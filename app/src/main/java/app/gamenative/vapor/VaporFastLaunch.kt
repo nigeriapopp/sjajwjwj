@@ -48,6 +48,9 @@ object VaporFastLaunch {
     @Volatile
     private var sessionStartedAt = 0L
 
+    /** When the current game session started (0 when none). */
+    val sessionStartMs: Long get() = sessionStartedAt
+
     /** The game screen opened. */
     fun onSessionStarted() {
         sessionStartedAt = System.currentTimeMillis()

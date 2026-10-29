@@ -230,7 +230,8 @@ public abstract class GPUInformation {
         if (cached != null) return cached;
         String value = getRenderer(driverName, context);
         if (value == null) value = "";
-        sDriverRenderer.put(key, value);
+        // Don't remember a failed probe (empty answer): try again next time.
+        if (!value.isEmpty()) sDriverRenderer.put(key, value);
         return value;
     }
 
@@ -239,7 +240,7 @@ public abstract class GPUInformation {
         Integer cached = sDriverVendor.get(key);
         if (cached != null) return cached;
         int value = getVendorID(driverName, context);
-        sDriverVendor.put(key, value);
+        if (value != 0) sDriverVendor.put(key, value);
         return value;
     }
 

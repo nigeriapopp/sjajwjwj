@@ -47,8 +47,8 @@ fun VaporUpdatePrompt() {
         if (app.gamenative.vapor.VaporPaths.isSecondaryUser() && !VaporSettings.secondaryUserNoticeShown) {
             VaporSettings.secondaryUserNoticeShown = true
             app.gamenative.ui.util.SnackbarManager.show(
-                "Vapor is running in Secure Folder or a second profile. Games use the classic display there; " +
-                    "installing Vapor in the normal profile is fastest.",
+                "Vapor is running in Secure Folder or a second profile. Vapor redirects its files there " +
+                    "automatically; if a game misbehaves, installing Vapor in the normal profile is the most reliable.",
             )
         }
         if (!VaporSettings.autoUpdateCheck) return@LaunchedEffect

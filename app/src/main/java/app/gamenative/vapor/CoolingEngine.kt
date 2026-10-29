@@ -9,7 +9,7 @@ import app.gamenative.ui.util.SnackbarManager
 import timber.log.Timber
 
 /**
- * Smart cooling: every 2 s reads Android's 10-second thermal forecast and status, and lowers the FPS cap in
+ * Smart cooling: every 10 s reads Android's 10-second thermal forecast and status, and lowers the FPS cap in
  * small steps just before the phone would throttle (see [CoolingPolicy]); restores it once cool.
  */
 class CoolingEngine private constructor(
@@ -68,7 +68,8 @@ class CoolingEngine private constructor(
     }
 
     companion object {
-        private const val TICK_MS = 2_000L
+        // Android refreshes the thermal headroom forecast at most every ~10 s (faster calls return NaN).
+        private const val TICK_MS = 10_000L
 
         fun attachIfEnabled(context: Context, userCap: () -> Int, apply: (Int?) -> Unit): CoolingEngine? {
             VaporSettings.init(context)

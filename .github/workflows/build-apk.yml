@@ -42,6 +42,20 @@ jobs:
           yes | "$SDKM" --licenses > /dev/null || true
           "$SDKM" --install "build-tools;34.0.0" > /dev/null
 
+      # Vapor: native path redirect so prebuilt binaries work in Samsung Secure Folder / work profiles.
+      - name: Build libvaporpath (NDK)
+        run: |
+          NDK="${ANDROID_NDK_LATEST_HOME:-}"
+          if [ -z "$NDK" ] || [ ! -d "$NDK" ]; then
+            "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "ndk;27.3.13750724" > /dev/null
+            NDK="$ANDROID_HOME/ndk/27.3.13750724"
+          fi
+          CC="$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android26-clang"
+          mkdir -p app/src/main/jniLibs/arm64-v8a
+          "$CC" -shared -fPIC -O2 -Wall -o app/src/main/jniLibs/arm64-v8a/libvaporpath.so \
+            app/src/main/cpp/vaporpath/vaporpath.c -ldl
+          ls -la app/src/main/jniLibs/arm64-v8a/libvaporpath.so
+
       # The same signing key on every build lets a new APK install as an update over the old one.
       # Source, in order: repo secret VAPOR_SIGNING_KEY_B64 (base64 debug.keystore, passwords "android"),
       # else this repo's private Actions cache, else a new key that is then saved to the cache.

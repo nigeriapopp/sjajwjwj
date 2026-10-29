@@ -1905,6 +1905,7 @@ class SteamService : Service(), IChallengeUrlChanged {
         private val NEGATIVE_KEYWORDS = listOf(
             "crash", "handler", "viewer", "compiler", "tool",
             "setup", "unins", "eac", "launcher", "steam",
+            "redist", "dxsetup", "vcredist", "directx", "dotnet", "benchmark", "config",
         )
 
         /* add near-name helper */
@@ -1928,7 +1929,8 @@ class SteamService : Service(), IChallengeUrlChanged {
             hasExeFlag: Boolean,
         ): Int {
             var s = 0
-            val path = file.fileName.lowercase()
+            // Depot manifests use backslashes; the folder checks below expect '/'.
+            val path = file.fileName.lowercase().replace('\\', '/')
 
             // 1️⃣ UE shipping or binaries folder bonus
             if (UE_SHIPPING.matches(path)) s += 300
@@ -1955,7 +1957,7 @@ class SteamService : Service(), IChallengeUrlChanged {
         fun FileData.isStub(): Boolean {
             /* stub detector (same short rules) */
             val generic = Regex("^[a-z]\\d{1,3}\\.exe$", RegexOption.IGNORE_CASE)
-            val bad = listOf("launcher", "steam", "crash", "handler", "setup", "unins", "eac")
+            val bad = listOf("launcher", "steam", "crash", "handler", "setup", "unins", "eac", "redist", "vcredist", "dxsetup")
             val n = fileName.lowercase()
             val stub = generic.matches(n) || bad.any { it in n } || totalSize < 1_000_000
             if (stub) Timber.d("Stub filtered: $fileName  size=$totalSize")

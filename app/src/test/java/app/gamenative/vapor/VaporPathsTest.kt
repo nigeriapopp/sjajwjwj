@@ -41,4 +41,19 @@ class VaporPathsTest {
         assertFalse(VaporPaths.isSecondaryUserDir("/data/data/app.gamenative"))
         assertTrue(VaporPaths.isSecondaryUserDir("/data/user/10/app.gamenative"))
     }
+
+    @Test
+    fun secureFolderAddsNativeRedirect() {
+        VaporPaths.configure("app.gamenative", "/data/user/150/app.gamenative", "/lib/libvaporpath.so")
+        val env = VaporPaths.fixEnv(arrayOf("LD_PRELOAD=/x/libevshim.so", "WINEPREFIX=/data/data/app.gamenative/files/imagefs/home/xuser/.wine"))!!
+        assertTrue(env.contains("LD_PRELOAD=/lib/libvaporpath.so:/x/libevshim.so"))
+        assertTrue(env.contains("WINEPREFIX=/data/user/150/app.gamenative/files/imagefs/home/xuser/.wine"))
+        assertTrue(env.contains("VAPOR_PATH_PKG=app.gamenative"))
+        assertTrue(env.contains("VAPOR_PATH_TO=/data/user/150/app.gamenative"))
+        assertTrue(VaporPaths.binariesRedirected())
+        assertEquals("/data/user/150/app.gamenative/files", VaporPaths.fix("/data/user/0/app.gamenative/files"))
+        // Second pass does not stack the library twice.
+        val again = VaporPaths.fixEnv(env)!!
+        assertEquals(1, again.count { it.startsWith("LD_PRELOAD=") && it.split(':').count { p -> p.endsWith("libvaporpath.so") } == 1 })
+    }
 }

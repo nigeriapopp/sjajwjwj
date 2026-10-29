@@ -43,7 +43,14 @@ object GameCrashLog {
         try {
             val out = File(dir(context) ?: return false, FILE_NAME)
             val raw = try {
-                val p = Runtime.getRuntime().exec(arrayOf("logcat", "-d", "-v", "time", "-t", LOG_LINES.toString()))
+                // Only this session's lines, so an old error (e.g. a past gamescope failure) can't be blamed.
+                val since = VaporFastLaunch.sessionStartMs
+                val range = if (since > 0) {
+                    arrayOf("-T", SimpleDateFormat("MM-dd HH:mm:ss.000", Locale.US).format(Date(since - 120_000L)))
+                } else {
+                    arrayOf("-t", LOG_LINES.toString())
+                }
+                val p = Runtime.getRuntime().exec(arrayOf("logcat", "-d", "-v", "time") + range)
                 p.inputStream.bufferedReader().use { it.readLines() }.also { p.destroy() }
             } catch (e: Exception) {
                 listOf("Could not read the log: ${e.message}")

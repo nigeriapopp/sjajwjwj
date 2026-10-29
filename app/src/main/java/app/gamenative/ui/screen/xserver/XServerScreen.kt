@@ -5539,6 +5539,16 @@ private fun exit(
             app.gamenative.vapor.VaporSettings.recordCrash(container.id)
         }
     }
+    // Vapor: automatic tap-to-click is per session; don't leave it saved as the game's own setting.
+    runCatching {
+        if (container.getExtra(app.gamenative.vapor.MouseGameDetector.AUTO_EXTRA) == "1" &&
+            container.getExtra(app.gamenative.vapor.MouseGameDetector.USER_CHOSE_EXTRA) != "1"
+        ) {
+            container.setTouchscreenMode(false)
+            container.putExtra(app.gamenative.vapor.MouseGameDetector.AUTO_EXTRA, "")
+            container.saveData()
+        }
+    }
     // Vapor: rolling save backup once Wine has shut down (skipped when no save changed).
     if (app.gamenative.vapor.VaporSettings.autoSaveBackup) {
         val vaporRoot = container.rootDir
@@ -5998,7 +6008,9 @@ private suspend fun setupWineSystemFiles(
 
     // Vapor Fast Launch: DXVK/D8VK only need unpacking again when something changed or a file went missing.
     val vaporDxMarker = File(imageFs.rootDir, ImageFs.WINEPREFIX + "/" + app.gamenative.vapor.VaporFastLaunch.DX_MARKER)
-    val vaporDxKey = xServerState.value.dxwrapper + "|d8vk-" + DefaultVersion.D8VK + "|" + container.wineVersion
+    // The Vapor build is part of the key: driver/DXVK archives change between releases under the same name.
+    val vaporDxKey = xServerState.value.dxwrapper + "|d8vk-" + DefaultVersion.D8VK + "|" + container.wineVersion +
+        "|app" + app.gamenative.BuildConfig.VERSION_CODE
     val vaporSystem32 = File(imageFs.rootDir, ImageFs.WINEPREFIX + "/drive_c/windows/system32")
     val vaporDxReusable = xServerState.value.dxwrapper.startsWith("dxvk-") && !container.isOverlay &&
         app.gamenative.vapor.VaporFastLaunch.isCurrent(
@@ -6207,9 +6219,9 @@ private fun hasContainerVariantChanged(container: Container, imageFs: ImageFs): 
 /** Launch-time check that the container selects X11; */
 internal fun resolveDisplayX11(container: Container?): Boolean {
     if (container == null) return true
-    // Vapor: gamescope's Xwayland only works in the phone's main user, and some phones can't start it at all.
-    // Use the classic display in Secure Folder / work profiles, and for games where gamescope failed to start.
-    if (app.gamenative.vapor.VaporPaths.isSecondaryUser() || app.gamenative.vapor.VaporSettings.gamescopeFailed(container.id)) {
+    // Vapor: gamescope's Xwayland has user-0 paths compiled in. In Secure Folder / work profiles it works through
+    // the native path redirect (libvaporpath); without it, and for games where gamescope failed, use classic X11.
+    if (!app.gamenative.vapor.VaporPaths.binariesRedirected() || app.gamenative.vapor.VaporSettings.gamescopeFailed(container.id)) {
         return true
     }
     return Container.isX11Display(container.containerVariant, container.displayServer)
@@ -6618,7 +6630,9 @@ private suspend fun extractGraphicsDriverFiles(
         // Vapor Fast Launch: trust the shared driver sentinel unless the setting is off or a repair was requested.
         val vaporForceDriver = !app.gamenative.vapor.VaporSettings.fastLaunch ||
             app.gamenative.vapor.VaporSettings.repairPending ||
-            File(imageFs.rootDir, "usr/share/vulkan/icd.d").list().isNullOrEmpty()
+            File(imageFs.rootDir, "usr/share/vulkan/icd.d").list().isNullOrEmpty() ||
+            runCatching { File(configDir, ".vapor_driver_done").readText() }.getOrNull() !=
+            cacheId + "|app" + app.gamenative.BuildConfig.VERSION_CODE
         val changed = vaporForceDriver || cacheId != container.getExtra("graphicsDriver") || cacheId != onDiskId
         if (changed) {
             // The bionic wrapper shares these libs: make it unpack again next time.
@@ -6757,6 +6771,11 @@ private suspend fun extractGraphicsDriverFiles(
                 extractGraphicsDriverComponent(context, "zink-22.2.5", rootDir)
             }
         }
+        // Vapor Fast Launch: the driver sentinel above is written before unpacking. Only this marker, written
+        // after every unpack finished, lets the next launch skip it (a failed download no longer sticks).
+        if (changed) {
+            runCatching { File(configDir, ".vapor_driver_done").writeText(cacheId + "|app" + app.gamenative.BuildConfig.VERSION_CODE) }
+        }
     } else {
         var adrenoToolsDriverId: String? = ""
         val selectedDriverVersion: String?
@@ -6814,8 +6833,9 @@ private suspend fun extractGraphicsDriverFiles(
         // launch. Reuse them while the markers match and the key files are still on disk.
         val vaporNeedsZink = container.wineVersion.contains("arm64ec") &&
             GPUInformation.rendererForDriver(null, null)?.contains("Mali") != true
-        val vaporWrapperKey = mainWrapperSelection
-        val vaporPrefixKey = mainWrapperSelection + "|" + container.wineVersion + "|zink=" + vaporNeedsZink
+        val vaporWrapperKey = mainWrapperSelection + "|app" + app.gamenative.BuildConfig.VERSION_CODE
+        val vaporPrefixKey = mainWrapperSelection + "|" + container.wineVersion + "|zink=" + vaporNeedsZink +
+            "|app" + app.gamenative.BuildConfig.VERSION_CODE
         val vaporWrapperMarker = File(rootDir, app.gamenative.vapor.VaporFastLaunch.WRAPPER_MARKER)
         val vaporPrefixMarker = File(rootDir, ImageFs.WINEPREFIX + "/" + app.gamenative.vapor.VaporFastLaunch.PREFIX_WRAPPER_MARKER)
         val vaporWrapperRequired = mutableListOf(

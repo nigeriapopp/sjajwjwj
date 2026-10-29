@@ -149,6 +149,8 @@ object SteamBootstrap {
             cfg.account?.let { put("SB_ACCOUNT", it) }
             cfg.refreshToken?.let { put("SB_REFRESH_TOKEN", it) }
             if (cfg.steamId64 != 0L) put("SB_STEAMID64", cfg.steamId64.toString())
+            // Vapor: Secure Folder / other users: redirect the user-0 paths compiled into the host.
+            app.gamenative.vapor.VaporPaths.fixEnv(this)
         }
 
         val proc = try { pb.start() } catch (_: Throwable) { return }
