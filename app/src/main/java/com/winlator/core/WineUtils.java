@@ -56,7 +56,7 @@ public abstract class WineUtils {
 
         String gameDirectoryPath = null;
         for (String[] drive : container.drivesIterator()) {
-            File linkTarget = new File(drive[1]);
+            File linkTarget = new File(app.gamenative.vapor.VaporPaths.fix(drive[1]));
             String path = linkTarget.getAbsolutePath();
             if (!linkTarget.isDirectory() && path.endsWith("/app.gamenative/storage")) {
                 linkTarget.mkdirs();

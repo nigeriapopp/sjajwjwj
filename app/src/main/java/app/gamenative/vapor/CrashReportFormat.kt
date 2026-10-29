@@ -21,6 +21,11 @@ object CrashReportFormat {
             "Guest program terminated|VK_ERROR|DXVK: |out of memory|Out of memory)",
     )
 
+    /** gamescope's Xwayland/wlserver never came up (the game itself never started). */
+    fun gamescopeFailed(lines: List<String>): Boolean = lines.any {
+        it.contains("Failed to initialize wlserver") || it.contains("Xwayland startup failed")
+    }
+
     fun isNoise(line: String): Boolean = NOISE.any { line.contains(it) }
 
     fun clean(lines: List<String>): List<String> = lines.filterNot { isNoise(it) }

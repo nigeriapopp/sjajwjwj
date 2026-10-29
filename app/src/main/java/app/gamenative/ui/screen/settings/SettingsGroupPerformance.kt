@@ -230,6 +230,18 @@ fun SettingsGroupPerformance() {
             },
         )
 
+        var tapToClick by rememberSaveable { mutableStateOf(VaporSettings.tapToClick) }
+        SettingsSwitch(
+            colors = settingsTileColorsAlt(),
+            state = tapToClick,
+            title = { Text(stringResource(R.string.vapor_tap_click_title)) },
+            subtitle = { Text(stringResource(R.string.vapor_tap_click_subtitle)) },
+            onCheckedChange = {
+                tapToClick = it
+                VaporSettings.tapToClick = it
+            },
+        )
+
         var ghostControls by rememberSaveable { mutableStateOf(VaporSettings.ghostControls) }
         SettingsSwitch(
             colors = settingsTileColorsAlt(),
@@ -245,15 +257,22 @@ fun SettingsGroupPerformance() {
     }
 
     SettingsGroup(title = { Text(stringResource(R.string.vapor_group_in_game)) }) {
-        var heatStepDown by rememberSaveable { mutableStateOf(VaporSettings.heatStepDown) }
-        SettingsSwitch(
-            colors = settingsTileColorsAlt(),
-            state = heatStepDown,
-            title = { Text(stringResource(R.string.vapor_heat_step_title)) },
-            subtitle = { Text(stringResource(R.string.vapor_heat_step_subtitle)) },
-            onCheckedChange = {
-                heatStepDown = it
-                VaporSettings.heatStepDown = it
+        var coolingMode by rememberSaveable { mutableIntStateOf(VaporSettings.coolingMode) }
+        SettingsMenuLink(
+            colors = settingsTileColors(),
+            title = { Text(stringResource(R.string.vapor_cooling_title)) },
+            subtitle = {
+                Text(
+                    stringResource(
+                        R.string.vapor_cooling_subtitle,
+                        app.gamenative.vapor.CoolingPolicy.Mode.fromOrdinal(coolingMode).label,
+                    ),
+                )
+            },
+            onClick = {
+                val next = (coolingMode + 1) % app.gamenative.vapor.CoolingPolicy.Mode.entries.size
+                coolingMode = next
+                VaporSettings.coolingMode = next
             },
         )
 

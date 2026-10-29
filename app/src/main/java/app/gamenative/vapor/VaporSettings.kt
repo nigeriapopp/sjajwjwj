@@ -165,11 +165,32 @@ object VaporSettings {
         p()?.edit()?.putBoolean("safemode_$key", on)?.apply()
     }
 
+    /** Turn on tap-to-click automatically in keyboard-and-mouse games. */
+    var tapToClick: Boolean
+        get() = p()?.getBoolean("tap_to_click", true) ?: true
+        set(v) { p()?.edit()?.putBoolean("tap_to_click", v)?.apply() }
+
+    /** Smart cooling mode (CoolingPolicy.Mode ordinal): 0 off, 1 Max FPS (default), 2 Balanced, 3 Coolest. */
+    var coolingMode: Int
+        get() = p()?.getInt("cooling_mode", if (p()?.getBoolean("heat_step_down", false) == true) 2 else 1) ?: 1
+        set(v) { p()?.edit()?.putInt("cooling_mode", v)?.apply() }
+
+    var secondaryUserNoticeShown: Boolean
+        get() = p()?.getBoolean("secondary_user_notice", false) ?: false
+        set(v) { p()?.edit()?.putBoolean("secondary_user_notice", v)?.apply() }
+
+    /** Gamescope couldn't start for this game (container id): use the classic X11 display. */
+    fun gamescopeFailed(key: String): Boolean = p()?.getBoolean("no_gamescope_$key", false) ?: false
+
+    fun setGamescopeFailed(key: String, failed: Boolean) {
+        p()?.edit()?.putBoolean("no_gamescope_$key", failed)?.apply()
+    }
+
     /** Forget all recorded crashes: games leave Crash Guard safe mode on their next launch. */
     fun resetCrashes() {
         val prefs = p() ?: return
         val e = prefs.edit()
-        prefs.all.keys.filter { it.startsWith("crashes_") }.forEach { e.remove(it) }
+        prefs.all.keys.filter { it.startsWith("crashes_") || it.startsWith("no_gamescope_") }.forEach { e.remove(it) }
         e.apply()
     }
 

@@ -31,15 +31,17 @@ object GameCrashLog {
      * @param settings one-line-per-setting summary of the container (wine, driver, DXVK, presets)
      * @param containerRoot the container folder, used to find the engine's own log files
      */
+    /** @return true when the log shows gamescope's display server failed to start. */
     fun capture(
         context: Context,
         gameName: String,
         status: Int,
         settings: String = "",
         containerRoot: File? = null,
-    ) {
+    ): Boolean {
+        var gamescopeFailed = false
         try {
-            val out = File(dir(context) ?: return, FILE_NAME)
+            val out = File(dir(context) ?: return false, FILE_NAME)
             val raw = try {
                 val p = Runtime.getRuntime().exec(arrayOf("logcat", "-d", "-v", "time", "-t", LOG_LINES.toString()))
                 p.inputStream.bufferedReader().use { it.readLines() }.also { p.destroy() }
@@ -48,6 +50,7 @@ object GameCrashLog {
             }
             val cleaned = CrashReportFormat.clean(raw)
             val keyLines = CrashReportFormat.keyLines(cleaned)
+            gamescopeFailed = CrashReportFormat.gamescopeFailed(cleaned)
             val version = runCatching {
                 context.packageManager.getPackageInfo(context.packageName, 0).versionName
             }.getOrNull() ?: "?"
@@ -66,6 +69,8 @@ object GameCrashLog {
                     appendLine("Vapor: $version")
                     appendLine("Phone: ${Build.MANUFACTURER} ${Build.MODEL} (Android ${Build.VERSION.RELEASE}), tier ${VaporSettings.tierName}")
                     appendLine("Fast Launch: ${VaporSettings.fastLaunch}")
+                    appendLine("Secure Folder / other user: ${VaporPaths.isSecondaryUser()}")
+                    if (gamescopeFailed) appendLine("Diagnosis: gamescope display failed to start -> next launch uses the classic display")
                     if (settings.isNotBlank()) {
                         appendLine()
                         appendLine("===== Game settings =====")
@@ -93,6 +98,7 @@ object GameCrashLog {
         } catch (e: Exception) {
             Timber.w(e, "[Vapor] could not save crash log")
         }
+        return gamescopeFailed
     }
 
     /** Opens the Android share sheet for the last crash log. Returns false if there is none. */

@@ -217,10 +217,10 @@ public class BionicProgramLauncherComponent extends GuestProgramLauncherComponen
             String memPath;
             if (i == 0) {
                 // Player 1 uses the original, non-numbered path that is known to work.
-                memPath = "/data/data/app.gamenative/files/imagefs/tmp/gamepad.mem";
+                memPath = ImageFs.find(environment.getContext()).getRootDir().getPath() + "/tmp/gamepad.mem";
             } else {
                 // Players 2, 3, 4 use a 1-based index.
-                memPath = "/data/data/app.gamenative/files/imagefs/tmp/gamepad" + i + ".mem";
+                memPath = ImageFs.find(environment.getContext()).getRootDir().getPath() + "/tmp/gamepad" + i + ".mem";
             }
 
             File memFile = new File(memPath);
@@ -384,6 +384,8 @@ public class BionicProgramLauncherComponent extends GuestProgramLauncherComponen
 
         envVars.put("LD_PRELOAD", ld_preload);
         envVars.put("EVSHIM_WINE", 1);
+        // Vapor: evshim's built-in default is user 0's folder; give it this user's real one.
+        envVars.put("EVSHIM_BASE_PATH", context.getFilesDir().getPath());
         envVars.put("EVSHIM_SHM_NAME", "controller-shm0");
         envVars.put("SDL_LINUX_JOYSTICK_CLASSIC", "1");
 

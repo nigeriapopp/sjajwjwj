@@ -87,6 +87,7 @@ class PluviaApp : SplitCompatApplication() {
 
         // Init our custom crash handler.
         CrashHandler.initialize(this)
+        app.gamenative.vapor.VaporPaths.init(this)
 
         // Android's record of why the last process died, then any debug run it never finished.
         DebugReportUtils.recovery = appScope.async {

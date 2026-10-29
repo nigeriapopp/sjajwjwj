@@ -44,6 +44,13 @@ fun VaporUpdatePrompt() {
     var release by remember { mutableStateOf<VaporRelease?>(null) }
     LaunchedEffect(Unit) {
         VaporSettings.init(context)
+        if (app.gamenative.vapor.VaporPaths.isSecondaryUser() && !VaporSettings.secondaryUserNoticeShown) {
+            VaporSettings.secondaryUserNoticeShown = true
+            app.gamenative.ui.util.SnackbarManager.show(
+                "Vapor is running in Secure Folder or a second profile. Games use the classic display there; " +
+                    "installing Vapor in the normal profile is fastest.",
+            )
+        }
         if (!VaporSettings.autoUpdateCheck) return@LaunchedEffect
         val latest = VaporUpdater.checkLatest()
         if (VaporUpdates.isNewer(latest, VaporUpdater.installedVersionCode(context)) &&

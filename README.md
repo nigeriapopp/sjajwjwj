@@ -93,6 +93,20 @@ FerriteCore or the Fabulously Optimized pack) and memory / render distance / res
 phone. Tap **Install** and Vapor downloads the launcher from its official GitHub release and opens Android's installer.
 You need to own Java Edition.
 
+**Works in Secure Folder** — Vapor can run inside Samsung Secure Folder, a work profile or a second user. The
+Windows stack's paths are pointed at that profile's own storage, and games use the classic display there (gamescope's
+display only starts in the main profile). If gamescope fails to start on any phone, Crash Guard switches that game
+to the classic display automatically.
+
+**Tap to click in mouse games** — Steam games without controller support start with tap-to-click: a tap clicks
+exactly where your finger is, drag = drag, hold or two-finger tap = right click. Change it per game from the game
+menu; Settings → Performance → Controls turns the automatic switch off.
+
+**Smart cooling** (on by default, *Max FPS* mode) — every 2 seconds Vapor reads Android's 10-second thermal forecast
+and lowers the FPS cap a little (60 → 50, then 45, then 30 if critical) *just before* Android would throttle the
+chip, which would otherwise make FPS fall off a cliff. Full FPS comes back one step at a time once the phone has
+stayed cool for a minute. Modes: Max FPS · Balanced · Coolest · Off (Settings → Performance → In game).
+
 **Smart Controls** — pick up a controller and the touch controls disappear; touch the screen and they come back.
 The touch that brings them back doesn't press anything, so grabbing the phone never fires a shot. If you turn
 controls on or off yourself from the game menu, Vapor leaves your choice alone for that session.
@@ -122,7 +136,8 @@ the menu never counts as a crash. Settings → Performance → **Reset Crash Gua
 **Settings → Performance** (grouped into Your phone · Controls · In game):
 - **Default FPS cap** — 30 / 40 / 45 / 60 / 90 / 120 for games you haven't tweaked.
 - **Smart controls** and **Ghost controls** on/off.
-- **Heat step-down** (off by default) — drops to 45 FPS when the phone overheats (30 if critical) and restores your cap when it cools.
+- **Smart cooling** — Max FPS / Balanced / Coolest / Off.
+- **Tap to click in mouse games** on/off.
 - **Do Not Disturb while playing** (off by default).
 - **Play-time reminders** (off by default) — a notice every hour.
 - **Stable FPS mode** — Android sustained-performance mode: slightly lower peak, much less throttling in long sessions.

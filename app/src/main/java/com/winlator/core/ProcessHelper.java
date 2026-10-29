@@ -200,6 +200,9 @@ public abstract class ProcessHelper {
     }
 
     public static String execWithOutput(String command, String[] envp, File workingDir, boolean includeStderr, int timeoutSeconds) {
+        // Vapor: point user-0 /data/data paths at this user's folder (Secure Folder, work profile).
+        envp = app.gamenative.vapor.VaporPaths.fixEnv(envp);
+        command = app.gamenative.vapor.VaporPaths.fix(command);
         StringBuilder output = new StringBuilder();
         final StringBuilder stdoutBuf = new StringBuilder();
         final StringBuilder stderrBuf = new StringBuilder();
@@ -303,6 +306,9 @@ public abstract class ProcessHelper {
     }
 
     public static int exec(String command, String[] envp, File workingDir, Callback<Integer> terminationCallback) {
+        // Vapor: point user-0 /data/data paths at this user's folder (Secure Folder, work profile).
+        envp = app.gamenative.vapor.VaporPaths.fixEnv(envp);
+        command = app.gamenative.vapor.VaporPaths.fix(command);
         int pid = -1;
         java.lang.Process process = null;
         try {
@@ -338,6 +344,9 @@ public abstract class ProcessHelper {
     }
 
     public static java.lang.Process startProcess(String command, String[] envp, File workingDir) {
+        // Vapor: point user-0 /data/data paths at this user's folder (Secure Folder, work profile).
+        envp = app.gamenative.vapor.VaporPaths.fixEnv(envp);
+        command = app.gamenative.vapor.VaporPaths.fix(command);
         try {
             if (BuildConfig.MODERN_ANDROID) command = "/system/bin/linker64 " + command;
 

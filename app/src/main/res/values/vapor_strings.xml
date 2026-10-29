@@ -60,4 +60,8 @@
     <string name="vapor_crash_reset_title">Reset Crash Guard</string>
     <string name="vapor_crash_reset_subtitle">Games that crashed run in safe mode (music may be off). Reset to try them normally again</string>
     <string name="vapor_crash_reset_done">Crash Guard reset. Games start normally on their next launch</string>
+    <string name="vapor_tap_click_title">Tap to click in mouse games</string>
+    <string name="vapor_tap_click_subtitle">Games without controller support: tapping clicks exactly where your finger is, hold or two-finger tap = right click</string>
+    <string name="vapor_cooling_title">Smart cooling</string>
+    <string name="vapor_cooling_subtitle">%1$s · lowers FPS a little just before the phone would throttle, restores it when cool. Tap to change</string>
 </resources>

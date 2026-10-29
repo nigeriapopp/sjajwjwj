@@ -788,14 +788,29 @@ fun XServerScreen(
         }
     }
 
-    // Vapor Heat Step-Down (opt-in): temporary lower cap while the phone is hot.
+    // Vapor Smart cooling: steps the FPS cap down just before the phone would throttle, restores it when cool.
+    // Handhelds with the adaptive FPS cap keep that instead (both would fight over the same cap).
     DisposableEffect(container.id) {
-        val heat = app.gamenative.vapor.HeatStepDown.attachIfEnabled(
-            context = context,
-            userCap = { effectiveFpsLimit() },
-            apply = { cap -> applyFpsLimiterToEngines(cap ?: effectiveFpsLimit()) },
-        )
-        onDispose { heat?.detach() }
+        val adaptiveOn = runCatching {
+            app.gamenative.powercontrol.PowerManager.currentProfile.adaptiveFpsCapEnabled
+        }.getOrDefault(false)
+        val cooling = if (adaptiveOn) {
+            null
+        } else {
+            app.gamenative.vapor.CoolingEngine.attachIfEnabled(
+                context = context,
+                userCap = { effectiveFpsLimit() },
+                apply = { cap -> applyFpsLimiterToEngines(cap ?: effectiveFpsLimit()) },
+            )
+        }
+        onDispose {
+            val cooledMs = cooling?.stop() ?: 0L
+            if (cooledMs >= 60_000L) {
+                app.gamenative.ui.util.SnackbarManager.show(
+                    "Smart cooling kept the phone from throttling for ${cooledMs / 60_000L} min this session",
+                )
+            }
+        }
     }
 
     fun applyLsfgMultiplier(mult: Int) {
@@ -1385,6 +1400,8 @@ fun XServerScreen(
             QuickMenuAction.TOUCHSCREEN_MODE -> {
                 val newMode = !container.isTouchscreenMode
                 container.setTouchscreenMode(newMode)
+                // Vapor: the player chose a mode for this game; never auto-switch it again.
+                container.putExtra(app.gamenative.vapor.MouseGameDetector.USER_CHOSE_EXTRA, "1")
                 container.saveData()
                 ui.isTouchscreenModeActive = newMode
 
@@ -2385,6 +2402,18 @@ fun XServerScreen(
                                 // Apply per-game gesture configuration
                                 val gestureConfig = app.gamenative.data.TouchGestureConfig.fromJson(container.getGestureConfig())
                                 PluviaApp.touchpadView?.setGestureConfig(gestureConfig)
+                            } else if (vaporAutoTapToClick(container, appId, currentAppInfo?.controllerSupport?.code)) {
+                                // Vapor: keyboard-and-mouse game: a tap clicks where the finger is, hold = right click.
+                                container.setTouchscreenMode(true)
+                                container.putExtra(app.gamenative.vapor.MouseGameDetector.AUTO_EXTRA, "1")
+                                ui.isTouchscreenModeActive = true
+                                val gestureConfig = app.gamenative.data.TouchGestureConfig.fromJson(container.getGestureConfig())
+                                    .copy(longPressEnabled = true)
+                                PluviaApp.touchpadView?.setTouchscreenMode(true)
+                                PluviaApp.touchpadView?.setGestureConfig(gestureConfig)
+                                app.gamenative.ui.util.SnackbarManager.show(
+                                    "Mouse game: tap to click, hold or two-finger tap to right-click. Change it in the game menu.",
+                                )
                             }
                             Timber.d("WinHandler configured: preferredInputApi=%s, dinputMapperType=0x%02x", PreferredInputApi.values()[container.inputType], container.dinputMapperType)
                             // Timber.d("1 Container drives: ${container.drives}")
@@ -3724,6 +3753,19 @@ private fun vaporControlsBlocked(ui: XServerScreenState, container: Container): 
     ui.showQuickMenu || ui.showElementEditor || ui.keepPausedForEditor || ui.isEditMode ||
         ui.isTouchscreenModeActive || container.isPortraitMode
 
+/** Vapor: should this launch turn on tap-to-click automatically (keyboard-and-mouse Steam game)? */
+private fun vaporAutoTapToClick(container: Container, appId: String, controllerSupportCode: Int?): Boolean =
+    runCatching {
+        app.gamenative.vapor.MouseGameDetector.shouldAutoEnable(
+            enabled = app.gamenative.vapor.VaporSettings.tapToClick,
+            isSteamGame = appId.startsWith("STEAM_"),
+            controllerSupportCode = controllerSupportCode,
+            hasPhysicalController = ControllerManager.getInstance().detectedDevices.isNotEmpty(),
+            userChoseMode = container.getExtra(app.gamenative.vapor.MouseGameDetector.USER_CHOSE_EXTRA) == "1",
+            alreadyTouchscreen = container.isTouchscreenMode,
+        )
+    }.getOrDefault(false)
+
 /** A controller button or stick was used: hide the touch controls and give the controller back Player 1. */
 private fun vaporOnGamepadInput(ui: XServerScreenState, container: Container) {
     val action = ui.smartControls.onGamepadInput(ui.areControlsVisible, vaporControlsBlocked(ui, container))
@@ -4563,7 +4605,7 @@ private fun setupXEnvironment(
         val bindingPaths = mutableListOf<String>()
         for (drive in container.drivesIterator()) {
             Timber.i("Binding drive ${drive[0]} with path of ${drive[1]}")
-            bindingPaths.add(drive[1])
+            bindingPaths.add(app.gamenative.vapor.VaporPaths.fix(drive[1]) ?: drive[1])
         }
         guestProgramLauncherComponent.bindingPaths = bindingPaths.toTypedArray()
         guestProgramLauncherComponent.box64Version = container.box64Version
@@ -4713,14 +4755,22 @@ private fun setupXEnvironment(
                 }.getOrDefault("")
             } ?: ""
             val vaporRoot = container?.rootDir
+            val vaporContainerId = container?.id
             Thread {
-                app.gamenative.vapor.GameCrashLog.capture(
+                val gamescopeFailed = app.gamenative.vapor.GameCrashLog.capture(
                     context,
                     ContainerUtils.resolveGameName(appId),
                     status,
                     vaporSettings,
                     vaporRoot,
                 )
+                if (gamescopeFailed && vaporContainerId != null) {
+                    // Crash Guard: gamescope couldn't start its display; use the classic one from now on.
+                    app.gamenative.vapor.VaporSettings.setGamescopeFailed(vaporContainerId, true)
+                    app.gamenative.ui.util.SnackbarManager.show(
+                        "The fast display mode couldn't start on this phone. Vapor switched this game to the classic display: press Play again.",
+                    )
+                }
             }.start()
             onGameLaunchError?.invoke("Game terminated with error status: $status")
         }
@@ -6156,7 +6206,13 @@ private fun hasContainerVariantChanged(container: Container, imageFs: ImageFs): 
 
 /** Launch-time check that the container selects X11; */
 internal fun resolveDisplayX11(container: Container?): Boolean {
-    return container == null || Container.isX11Display(container.containerVariant, container.displayServer)
+    if (container == null) return true
+    // Vapor: gamescope's Xwayland only works in the phone's main user, and some phones can't start it at all.
+    // Use the classic display in Secure Folder / work profiles, and for games where gamescope failed to start.
+    if (app.gamenative.vapor.VaporPaths.isSecondaryUser() || app.gamenative.vapor.VaporSettings.gamescopeFailed(container.id)) {
+        return true
+    }
+    return Container.isX11Display(container.containerVariant, container.displayServer)
 }
 
 private fun refreshComponentsFiles(context: Context) {

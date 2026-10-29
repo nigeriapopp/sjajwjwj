@@ -43,4 +43,10 @@ class CrashReportFormatTest {
         assertEquals("b\nc", CrashReportFormat.tail(b, 2))
         assertTrue(a.exists())
     }
+
+    @Test
+    fun detectsGamescopeStartFailure() {
+        assertTrue(CrashReportFormat.gamescopeFailed(listOf("x", "I/System.out(1): Failed to initialize wlserver")))
+        assertTrue(!CrashReportFormat.gamescopeFailed(log))
+    }
 }
