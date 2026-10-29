@@ -4705,8 +4705,22 @@ private fun setupXEnvironment(
             // Vapor Crash Guard: keep the log for sharing and do a full file repair on the next launch.
             app.gamenative.vapor.VaporSettings.repairPending = true
             container?.id?.let { app.gamenative.vapor.VaporSettings.recordCrash(it) }
+            val vaporSettings = container?.let { c ->
+                runCatching {
+                    "Wine: ${c.wineVersion}\nGraphics driver: ${c.graphicsDriver}\nDX wrapper: ${c.dxWrapper}\n" +
+                        "Box64 preset: ${c.box64Preset}\nFEX preset: ${c.fexCorePreset}\nScreen: ${c.screenSize}\n" +
+                        "Executable: ${c.executablePath}\nEnv: ${c.envVars}"
+                }.getOrDefault("")
+            } ?: ""
+            val vaporRoot = container?.rootDir
             Thread {
-                app.gamenative.vapor.GameCrashLog.capture(context, ContainerUtils.resolveGameName(appId), status)
+                app.gamenative.vapor.GameCrashLog.capture(
+                    context,
+                    ContainerUtils.resolveGameName(appId),
+                    status,
+                    vaporSettings,
+                    vaporRoot,
+                )
             }.start()
             onGameLaunchError?.invoke("Game terminated with error status: $status")
         }

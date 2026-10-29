@@ -11,31 +11,52 @@ import java.util.Locale
 import timber.log.Timber
 
 /**
- * When a game exits with an error, Vapor saves the recent app + Wine log so the player can share it.
- * Android only lets an app read its own logs, which includes Wine and the game (child processes).
+ * When a game exits with an error, Vapor saves a crash report the player can share:
+ * a summary of the game's settings, the error lines, the game engine's own log (Unity Player.log /
+ * Unreal Saved/Logs), then the cleaned app + Wine log. Android only lets an app read its own logs,
+ * which includes Wine and the game (child processes).
  */
 object GameCrashLog {
     private const val FILE_NAME = "vapor_last_game_crash.txt"
-    private const val LOG_LINES = 4000
+    private const val LOG_LINES = 20000
+    private const val TAIL_LINES = 1500
 
     private fun dir(context: Context): File? =
         context.getExternalFilesDir(null)?.let { File(it, "debug_reports").apply { mkdirs() } }
 
     fun latest(context: Context): File? = dir(context)?.let { File(it, FILE_NAME) }?.takeIf { it.isFile && it.length() > 0 }
 
-    /** Saves the log. Blocking: call off the main thread. */
-    fun capture(context: Context, gameName: String, status: Int) {
+    /**
+     * Saves the report. Blocking: call off the main thread.
+     * @param settings one-line-per-setting summary of the container (wine, driver, DXVK, presets)
+     * @param containerRoot the container folder, used to find the engine's own log files
+     */
+    fun capture(
+        context: Context,
+        gameName: String,
+        status: Int,
+        settings: String = "",
+        containerRoot: File? = null,
+    ) {
         try {
             val out = File(dir(context) ?: return, FILE_NAME)
-            val logcat = try {
+            val raw = try {
                 val p = Runtime.getRuntime().exec(arrayOf("logcat", "-d", "-v", "time", "-t", LOG_LINES.toString()))
-                p.inputStream.bufferedReader().use { it.readText() }.also { p.destroy() }
+                p.inputStream.bufferedReader().use { it.readLines() }.also { p.destroy() }
             } catch (e: Exception) {
-                "Could not read the log: ${e.message}"
+                listOf("Could not read the log: ${e.message}")
             }
+            val cleaned = CrashReportFormat.clean(raw)
+            val keyLines = CrashReportFormat.keyLines(cleaned)
             val version = runCatching {
                 context.packageManager.getPackageInfo(context.packageName, 0).versionName
             }.getOrNull() ?: "?"
+
+            val userDir = containerRoot?.let { SaveSnapshots.userDir(it) }
+            val unityLog = userDir?.let { CrashReportFormat.newestFile(File(it, "AppData/LocalLow"), "Player.log") }
+            val unrealLog = userDir?.let { CrashReportFormat.newestLog(File(it, "AppData/Local")) }
+                ?.takeIf { it.path.contains("Saved${File.separator}Logs") }
+
             out.writeText(
                 buildString {
                     appendLine("Vapor game crash report")
@@ -45,8 +66,27 @@ object GameCrashLog {
                     appendLine("Vapor: $version")
                     appendLine("Phone: ${Build.MANUFACTURER} ${Build.MODEL} (Android ${Build.VERSION.RELEASE}), tier ${VaporSettings.tierName}")
                     appendLine("Fast Launch: ${VaporSettings.fastLaunch}")
+                    if (settings.isNotBlank()) {
+                        appendLine()
+                        appendLine("===== Game settings =====")
+                        appendLine(settings.trim())
+                    }
                     appendLine()
-                    append(logcat)
+                    appendLine("===== Error lines (most useful part) =====")
+                    if (keyLines.isEmpty()) appendLine("(none found)") else keyLines.forEach { appendLine(it) }
+                    unityLog?.let {
+                        appendLine()
+                        appendLine("===== Unity log: ${it.parentFile?.name}/${it.name} (last 200 lines) =====")
+                        appendLine(CrashReportFormat.tail(it, 200))
+                    }
+                    unrealLog?.let {
+                        appendLine()
+                        appendLine("===== Unreal log: ${it.name} (last 200 lines) =====")
+                        appendLine(CrashReportFormat.tail(it, 200))
+                    }
+                    appendLine()
+                    appendLine("===== App + Wine log (last $TAIL_LINES lines, file unpacking removed) =====")
+                    cleaned.takeLast(TAIL_LINES).forEach { appendLine(it) }
                 },
             )
             Timber.i("[Vapor] saved game crash log to ${out.absolutePath}")
