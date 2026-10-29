@@ -136,6 +136,18 @@ class BarkModel:
                        "heads": {k: {"W": h.W.tolist(), "b": h.b.tolist()}
                                  for k, h in self.heads.items()}}, f)
 
+    def save_txt(self, path: str) -> None:
+        """Plain-text weights for the Android app (android/BarkModel.java)."""
+        with open(path, "w") as f:
+            f.write(f"{len(self.mu)}\n")
+            f.write(" ".join(repr(float(v)) for v in self.mu) + "\n")
+            f.write(" ".join(repr(float(v)) for v in self.sd) + "\n")
+            for k in ("arousal", "valence"):
+                h = self.heads[k]
+                f.write(" ".join(repr(float(v)) for v in h.b) + "\n")
+                for row in h.W:
+                    f.write(" ".join(repr(float(v)) for v in row) + "\n")
+
     @classmethod
     def load(cls, path: str) -> "BarkModel":
         with open(path) as f:

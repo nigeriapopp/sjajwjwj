@@ -80,6 +80,7 @@ def main():
     final = bark.BarkModel().fit(np.vstack([Xtr, Xva]), np.r_[atr, ava], np.r_[vtr, vva], l2=l2)
     os.makedirs(os.path.dirname(args.out), exist_ok=True)
     final.save(args.out)
+    final.save_txt(os.path.splitext(args.out)[0] + ".txt")
     print(f"\nsaved {args.out} (l2={l2}, trained on all {len(Xtr) + len(Xva)} clips)")
 
 

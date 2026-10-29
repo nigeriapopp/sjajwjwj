@@ -59,3 +59,21 @@ animal-ethics (IACUC or equivalent) approval. This repo does not do it.
 ## Other real dog data worth trying
 - Aalto University: [dog EEG responses to faces/objects](https://research.aalto.fi/en/datasets/dog-visual-perception-of-faces-objects-and-phase-scrambled-images/) (non-invasive, 7–9 channels)
 - Canine epilepsy intracranial EEG (see the [dataset review](https://arxiv.org/pdf/2306.12292))
+
+## Android app (Bark Reader)
+
+`android/` is a small native app with two tabs:
+- **Listen**: records up to 5 s from the mic (or opens a .wav), trims silence,
+  and shows energy and mood with confidence bars. It runs fully on the phone, no internet.
+- **Experimental**: the simulated neural bridge. Pick a species, a simulated
+  animal state and a concept, then "send" it and watch the safety locks
+  (rate limit, heart-rate cut-off, intensity cap, fear-concept block, named reset).
+  Nothing is transmitted.
+
+The Java feature code matches the Python version to within 1e-9 and gets the same
+validation accuracy. Build it (no Gradle needed, just Android SDK platform 34 + build-tools 35):
+
+```bash
+python3 src/fetch_dog_data.py && python3 src/train_cross_species_weights.py
+android/build.sh   # -> android/build/BarkReader.apk
+```
