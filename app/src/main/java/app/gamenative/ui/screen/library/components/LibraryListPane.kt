@@ -247,6 +247,7 @@ internal fun LibraryListPane(
                             state = listState,
                             modifier = Modifier.fillMaxSize(),
                             horizontalArrangement = Arrangement.spacedBy(gridSpacing),
+                            verticalArrangement = Arrangement.spacedBy(gridSpacing / 2),
                             contentPadding = PaddingValues(
                                 top = 80.dp,
                                 start = horizontalPadding,
@@ -339,6 +340,7 @@ internal fun LibraryListPane(
                         state = skeletonListState,
                         modifier = Modifier.fillMaxSize(),
                         horizontalArrangement = Arrangement.spacedBy(gridSpacing),
+                            verticalArrangement = Arrangement.spacedBy(gridSpacing / 2),
                         contentPadding = PaddingValues(
                             top = 80.dp,
                             start = horizontalPadding,

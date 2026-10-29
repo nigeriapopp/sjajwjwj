@@ -53,16 +53,17 @@ fun adaptivePanelWidth(preferredWidth: Dp, maxWidthPercent: Float = 0.85f): Dp {
 object AdaptivePadding {
     @Composable
     fun horizontal(): Dp = when (rememberWindowWidthClass()) {
-        WindowWidthClass.COMPACT -> 12.dp
-        WindowWidthClass.MEDIUM -> 16.dp
-        WindowWidthClass.EXPANDED -> 20.dp
+        WindowWidthClass.COMPACT -> 16.dp
+        WindowWidthClass.MEDIUM -> 20.dp
+        WindowWidthClass.EXPANDED -> 24.dp
     }
 
     @Composable
+    // Vapor: roomier grid so covers don't crowd each other on phones.
     fun gridSpacing(): Dp = when (rememberWindowWidthClass()) {
-        WindowWidthClass.COMPACT -> 8.dp
-        WindowWidthClass.MEDIUM -> 10.dp
-        WindowWidthClass.EXPANDED -> 12.dp
+        WindowWidthClass.COMPACT -> 12.dp
+        WindowWidthClass.MEDIUM -> 16.dp
+        WindowWidthClass.EXPANDED -> 18.dp
     }
 }
 
