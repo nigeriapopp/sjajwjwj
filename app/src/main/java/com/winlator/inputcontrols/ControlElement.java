@@ -680,7 +680,7 @@ public class ControlElement {
         return ColorUtils.setAlphaComponent(strokeColor, (int) (a * (active ? 0.55f : 0.28f)));
     }
 
-    private void vaporDrawButtonShape(Canvas canvas, Rect boundingBox, float cx, float cy) {
+    private void vaporDrawButtonShape(Canvas canvas, Paint paint, float snappingSize, Rect boundingBox, float cx, float cy) {
         switch (shape) {
             case CIRCLE:
                 canvas.drawCircle(cx, cy, boundingBox.width() * 0.5f, paint);
@@ -915,10 +915,10 @@ public class ControlElement {
                 // Vapor: glass fill first, then the outline on top.
                 paint.setStyle(Paint.Style.FILL);
                 paint.setColor(vaporFillColor(primaryColor, active));
-                vaporDrawButtonShape(canvas, boundingBox, cx, cy);
+                vaporDrawButtonShape(canvas, paint, snappingSize, boundingBox, cx, cy);
                 paint.setStyle(Paint.Style.STROKE);
                 paint.setColor(primaryColor);
-                vaporDrawButtonShape(canvas, boundingBox, cx, cy);
+                vaporDrawButtonShape(canvas, paint, snappingSize, boundingBox, cx, cy);
 
                 if (iconId > 0) {
                     drawIcon(canvas, cx, cy, boundingBox.width(), boundingBox.height(), iconId, contentColor);
