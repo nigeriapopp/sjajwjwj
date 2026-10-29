@@ -842,7 +842,7 @@ fun QuickMenu(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(start = 20.dp, end = 8.dp, top = 16.dp, bottom = 8.dp),
+                            .padding(start = 20.dp, end = 8.dp, top = 8.dp, bottom = 4.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
@@ -857,17 +857,17 @@ fun QuickMenu(
 
                     HorizontalDivider(
                         modifier = Modifier.padding(horizontal = 16.dp),
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
                     )
 
                     Row(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(horizontal = 12.dp, vertical = 12.dp),
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
                     ) {
                         Column(
                             modifier = Modifier
-                                .width(64.dp)
+                                .width(56.dp)
                                 .fillMaxHeight()
                                 .focusGroup(),
                             horizontalAlignment = Alignment.CenterHorizontally,
@@ -877,7 +877,7 @@ fun QuickMenu(
                                 modifier = Modifier
                                     .weight(1f)
                                     .verticalScroll(tabScrollState),
-                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalArrangement = Arrangement.spacedBy(6.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally,
                             ) {
                                 QuickMenuTabButton(
@@ -889,7 +889,7 @@ fun QuickMenu(
                                         selectedTab = QuickMenuTab.HUD
                                         PrefManager.quickMenuLastTab = selectedTab
                                     },
-                                    modifier = Modifier.width(56.dp),
+                                    modifier = Modifier.width(48.dp),
                                     focusRequester = hudTabFocusRequester,
                                 )
                                 if (container != null) {
@@ -902,7 +902,7 @@ fun QuickMenu(
                                             selectedTab = QuickMenuTab.SAVES
                                             PrefManager.quickMenuLastTab = selectedTab
                                         },
-                                        modifier = Modifier.width(56.dp),
+                                        modifier = Modifier.width(48.dp),
                                         focusRequester = savesTabFocusRequester,
                                     )
                                 }
@@ -915,7 +915,7 @@ fun QuickMenu(
                                         selectedTab = QuickMenuTab.POWER
                                         PrefManager.quickMenuLastTab = selectedTab
                                     },
-                                    modifier = Modifier.width(56.dp),
+                                    modifier = Modifier.width(48.dp),
                                     focusRequester = powerTabFocusRequester,
                                 )
                                 if (isGamescopeSession) {
@@ -928,7 +928,7 @@ fun QuickMenu(
                                             selectedTab = QuickMenuTab.GAMESCOPE
                                             PrefManager.quickMenuLastTab = selectedTab
                                         },
-                                        modifier = Modifier.width(56.dp),
+                                        modifier = Modifier.width(48.dp),
                                         focusRequester = gamescopeTabFocusRequester,
                                     )
                                 }
@@ -942,7 +942,7 @@ fun QuickMenu(
                                             selectedTab = QuickMenuTab.LSFG
                                             PrefManager.quickMenuLastTab = selectedTab
                                         },
-                                        modifier = Modifier.width(56.dp),
+                                        modifier = Modifier.width(48.dp),
                                         focusRequester = lsfgTabFocusRequester,
                                     )
                                 }
@@ -956,7 +956,7 @@ fun QuickMenu(
                                             selectedTab = QuickMenuTab.INVITE
                                             PrefManager.quickMenuLastTab = selectedTab
                                         },
-                                        modifier = Modifier.width(56.dp),
+                                        modifier = Modifier.width(48.dp),
                                         focusRequester = inviteTabFocusRequester,
                                     )
                                 }
@@ -970,7 +970,7 @@ fun QuickMenu(
                                             selectedTab = QuickMenuTab.EFFECTS
                                             PrefManager.quickMenuLastTab = selectedTab
                                         },
-                                        modifier = Modifier.width(56.dp),
+                                        modifier = Modifier.width(48.dp),
                                         focusRequester = effectsTabFocusRequester,
                                     )
                                 }
@@ -983,7 +983,7 @@ fun QuickMenu(
                                         selectedTab = QuickMenuTab.CONTROLLER
                                         PrefManager.quickMenuLastTab = selectedTab
                                     },
-                                    modifier = Modifier.width(56.dp),
+                                    modifier = Modifier.width(48.dp),
                                     focusRequester = controllerTabFocusRequester,
                                 )
                                 QuickMenuTabButton(
@@ -992,7 +992,7 @@ fun QuickMenu(
                                     selected = selectedTab == QuickMenuTab.TOOLS,
                                     accentColor = PluviaTheme.colors.accentPurple,
                                     onSelected = { selectedTab = QuickMenuTab.TOOLS },
-                                    modifier = Modifier.width(56.dp),
+                                    modifier = Modifier.width(48.dp),
                                     focusRequester = toolsTabFocusRequester,
                                 )
                                 if (immersiveControls != null) {
@@ -1005,7 +1005,7 @@ fun QuickMenu(
                                             selectedTab = QuickMenuTab.IMMERSIVE
                                             PrefManager.quickMenuLastTab = selectedTab
                                         },
-                                        modifier = Modifier.width(56.dp),
+                                        modifier = Modifier.width(48.dp),
                                         focusRequester = immersiveTabFocusRequester,
                                     )
                                 }
@@ -1043,9 +1043,9 @@ fun QuickMenu(
                                             )
                                         }
                                     },
-                                    modifier = Modifier.width(56.dp),
+                                    modifier = Modifier.width(48.dp),
                                 )
-                                Spacer(modifier = Modifier.height(8.dp))
+                                Spacer(modifier = Modifier.height(6.dp))
                             }
                             QuickMenuRailActionButton(
                                 item = exitGameItem,
@@ -1054,7 +1054,7 @@ fun QuickMenu(
                                         onDismiss()
                                     }
                                 },
-                                modifier = Modifier.width(56.dp),
+                                modifier = Modifier.width(48.dp),
                                 focusRequester = exitFocusRequester,
                             )
                         }
@@ -1601,6 +1601,7 @@ private fun PerformanceHudQuickMenuTab(
                 Spacer(modifier = Modifier.height(6.dp))
                 Row(
                     modifier = Modifier
+                        .fillMaxWidth()
                         .padding(horizontal = 8.dp)
                         .then(if (LocalImmersiveInputBypass.current.active) Modifier.focusGroup() else Modifier),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -1611,7 +1612,7 @@ private fun PerformanceHudQuickMenuTab(
                             selected = fpsLimiterTarget == cap,
                             accentColor = accentColor,
                             onClick = { onFpsLimiterChanged(cap) },
-                            modifier = Modifier.width(56.dp),
+                            modifier = Modifier.weight(1f),
                         )
                     }
                 }
@@ -2300,11 +2301,11 @@ private fun QuickMenuTabButton(
 
     Box(
         modifier = modifier
-            .size(56.dp)
+            .size(48.dp)
             .clip(shape)
             .background(
                 when {
-                    selected -> accentColor.copy(alpha = 0.18f)
+                    selected -> accentColor.copy(alpha = 0.22f)
                     isFocused -> accentColor.copy(alpha = 0.12f)
                     else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
                 },
@@ -2370,7 +2371,7 @@ private fun QuickMenuRailActionButton(
 
     Box(
         modifier = modifier
-            .size(56.dp)
+            .size(48.dp)
             .then(
                 if (isFocused) {
                     Modifier.border(
@@ -2440,7 +2441,7 @@ internal fun QuickMenuChoiceChip(
 
     Box(
         modifier = modifier
-            .height(44.dp)
+            .height(48.dp)
             .then(
                 if (isFocused) {
                     Modifier.border(

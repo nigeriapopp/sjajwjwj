@@ -57,7 +57,7 @@ import java.util.TimerTask;
 
 public class InputControlsView extends View {
     private static final long SHOOTER_SPRINT_TAP_DURATION_MS = 120;
-    public static final float DEFAULT_OVERLAY_OPACITY = 0.4f;
+    public static final float DEFAULT_OVERLAY_OPACITY = 0.6f; // Vapor: 0.4 read as faint grey over games
     private static final int SEQUENCE_PRESS_MS = 80;
     // LX, LY, RX, RY - the leading entries of the axis array processed in processJoystickInput
     private static final int PHYSICAL_STICK_AXIS_COUNT = 4;

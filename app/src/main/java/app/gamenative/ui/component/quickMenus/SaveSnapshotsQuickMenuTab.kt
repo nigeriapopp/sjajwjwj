@@ -281,7 +281,7 @@ private fun SnapshotRow(
                 modifier = Modifier
                     .padding(top = 10.dp)
                     .fillMaxWidth()
-                    .height(44.dp)
+                    .height(48.dp)
                     .clip(RoundedCornerShape(12.dp))
                     .background(accent)
                     .clickable(onClick = onLoad),

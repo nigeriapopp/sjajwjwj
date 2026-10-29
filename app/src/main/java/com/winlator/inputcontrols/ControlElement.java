@@ -660,8 +660,49 @@ public class ControlElement {
         return text;
     }
 
+    /** Vapor: Xbox-style colours for A/B/X/Y when the player hasn't picked a colour. */
+    private int vaporFaceTint() {
+        if (buttonColor != DEFAULT_BUTTON_COLOR || type != Type.BUTTON || iconId > 0) return buttonColor;
+        String t = getDisplayText();
+        if (t == null) return buttonColor;
+        switch (t) {
+            case "A": return 0x6BD16B;
+            case "B": return 0xFF6B6B;
+            case "X": return 0x5AA9FF;
+            case "Y": return 0xFFD166;
+            default: return buttonColor;
+        }
+    }
+
+    /** Vapor: translucent "glass" fill drawn under the outline so controls read over bright scenes. */
+    private int vaporFillColor(int strokeColor, boolean active) {
+        int a = strokeColor >>> 24;
+        return ColorUtils.setAlphaComponent(strokeColor, (int) (a * (active ? 0.55f : 0.28f)));
+    }
+
+    private void vaporDrawButtonShape(Canvas canvas, Rect boundingBox, float cx, float cy) {
+        switch (shape) {
+            case CIRCLE:
+                canvas.drawCircle(cx, cy, boundingBox.width() * 0.5f, paint);
+                break;
+            case RECT:
+                canvas.drawRect(boundingBox, paint);
+                break;
+            case ROUND_RECT: {
+                float radius = boundingBox.height() * 0.5f;
+                canvas.drawRoundRect(boundingBox.left, boundingBox.top, boundingBox.right, boundingBox.bottom, radius, radius, paint);
+                break;
+            }
+            case SQUARE: {
+                float radius = snappingSize * 0.75f * scale;
+                canvas.drawRoundRect(boundingBox.left, boundingBox.top, boundingBox.right, boundingBox.bottom, radius, radius, paint);
+                break;
+            }
+        }
+    }
+
     private int getAppearanceDrawColor(boolean active) {
-        int rgb = active ? buttonActiveColor : buttonColor;
+        int rgb = active ? buttonActiveColor : vaporFaceTint();
         int alpha = (int)(getEffectiveButtonOpacity(inputControlsView.getOverlayOpacity()) * 255);
         return ColorUtils.setAlphaComponent(0xff000000 | rgb, alpha);
     }
@@ -862,7 +903,7 @@ public class ControlElement {
 
         paint.setColor(primaryColor);
         paint.setStyle(Paint.Style.STROKE);
-        float strokeWidth = snappingSize * 0.25f * buttonStrokeScale;
+        float strokeWidth = snappingSize * 0.30f * buttonStrokeScale;
         paint.setStrokeWidth(strokeWidth);
         Rect boundingBox = getBoundingBox();
 
@@ -871,24 +912,13 @@ public class ControlElement {
                 float cx = boundingBox.centerX();
                 float cy = boundingBox.centerY();
 
-                switch (shape) {
-                    case CIRCLE:
-                        canvas.drawCircle(cx, cy, boundingBox.width() * 0.5f, paint);
-                        break;
-                    case RECT:
-                        canvas.drawRect(boundingBox, paint);
-                        break;
-                    case ROUND_RECT: {
-                        float radius = boundingBox.height() * 0.5f;
-                        canvas.drawRoundRect(boundingBox.left, boundingBox.top, boundingBox.right, boundingBox.bottom, radius, radius, paint);
-                        break;
-                    }
-                    case SQUARE: {
-                        float radius = snappingSize * 0.75f * scale;
-                        canvas.drawRoundRect(boundingBox.left, boundingBox.top, boundingBox.right, boundingBox.bottom, radius, radius, paint);
-                        break;
-                    }
-                }
+                // Vapor: glass fill first, then the outline on top.
+                paint.setStyle(Paint.Style.FILL);
+                paint.setColor(vaporFillColor(primaryColor, active));
+                vaporDrawButtonShape(canvas, boundingBox, cx, cy);
+                paint.setStyle(Paint.Style.STROKE);
+                paint.setColor(primaryColor);
+                vaporDrawButtonShape(canvas, boundingBox, cx, cy);
 
                 if (iconId > 0) {
                     drawIcon(canvas, cx, cy, boundingBox.width(), boundingBox.height(), iconId, contentColor);
@@ -915,10 +945,16 @@ public class ControlElement {
                     setDPadDirectionPath(path, i, boundingBox, cx, cy, offsetX, offsetY, start);
                     boolean directionActive = editSelected || states[i];
 
-                    paint.setStyle(Paint.Style.STROKE);
-                    paint.setStrokeWidth(strokeWidth);
-                    paint.setColor(directionActive ? activeColor : normalColor);
+                    int dirColor = directionActive ? activeColor : normalColor;
+                    paint.setStyle(Paint.Style.FILL);
+                    paint.setColor(vaporFillColor(dirColor, directionActive));
                     canvas.drawPath(path, paint);
+                    paint.setStyle(Paint.Style.STROKE);
+                    paint.setStrokeJoin(Paint.Join.ROUND);
+                    paint.setStrokeWidth(strokeWidth);
+                    paint.setColor(dirColor);
+                    canvas.drawPath(path, paint);
+                    paint.setStrokeJoin(Paint.Join.MITER);
                 }
                 break;
             }
@@ -1097,7 +1133,8 @@ public class ControlElement {
 
                 short thumbRadius = (short) (snappingSize * 3.5f * scale);
                 paint.setStyle(Paint.Style.FILL);
-                paint.setColor(ColorUtils.setAlphaComponent(contentColor, Math.min(50, contentColor >>> 24)));
+                // Vapor: brighter thumb so the stick reads over the game.
+                paint.setColor(ColorUtils.setAlphaComponent(contentColor, Math.min(110, contentColor >>> 24)));
                 canvas.drawCircle(thumbstickX, thumbstickY, thumbRadius, paint);
 
                 paint.setStyle(Paint.Style.STROKE);

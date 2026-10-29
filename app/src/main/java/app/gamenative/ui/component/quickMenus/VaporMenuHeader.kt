@@ -17,6 +17,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
@@ -59,7 +60,12 @@ fun VaporMenuHeader(
     val accent = PluviaTheme.colors.accentCyan
     val accent2 = PluviaTheme.colors.accentPurple
 
-    Column(modifier = modifier) {
+    // One row: title, then clock and battery chips, so the tab rail keeps its height in landscape.
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
         Text(
             text = title,
             maxLines = 1,
@@ -68,15 +74,11 @@ fun VaporMenuHeader(
                 fontWeight = FontWeight.Bold,
                 brush = Brush.horizontalGradient(listOf(accent, accent2)),
             ),
+            modifier = Modifier.weight(1f, fill = false),
         )
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            modifier = Modifier.padding(top = 4.dp),
-        ) {
-            HeaderChip(clock, accent)
-            if (battery in 0..100) {
-                HeaderChip("$battery%", if (battery <= 15) PluviaTheme.colors.accentDanger else accent2)
-            }
+        HeaderChip(clock, accent)
+        if (battery in 0..100) {
+            HeaderChip("$battery%", if (battery <= 15) PluviaTheme.colors.accentDanger else accent2)
         }
     }
 }
@@ -85,11 +87,11 @@ fun VaporMenuHeader(
 private fun HeaderChip(text: String, color: Color) {
     Text(
         text = text,
-        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
         color = color,
         modifier = Modifier
             .clip(RoundedCornerShape(50))
             .background(color.copy(alpha = 0.14f))
-            .padding(horizontal = 8.dp, vertical = 2.dp),
+            .padding(horizontal = 10.dp, vertical = 4.dp),
     )
 }

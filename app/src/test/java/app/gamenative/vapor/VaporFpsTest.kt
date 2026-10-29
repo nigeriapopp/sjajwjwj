@@ -7,8 +7,9 @@ class VaporFpsTest {
     @Test
     fun capsFitTheDisplay() {
         assertEquals(listOf(30, 40, 45, 60), VaporFps.quickCaps(60))
-        assertEquals(listOf(30, 40, 45, 60, 90), VaporFps.quickCaps(120))
-        assertEquals(listOf(30, 40, 45, 60, 90), VaporFps.quickCaps(240))
+        assertEquals(listOf(30, 45, 60, 120), VaporFps.quickCaps(120))
+        assertEquals(listOf(30, 45, 60, 90), VaporFps.quickCaps(90))
+        assertEquals(listOf(30, 45, 60, 120), VaporFps.quickCaps(240))
         assertEquals(listOf(30, 40, 45, 60), VaporFps.quickCaps(0))
     }
 }

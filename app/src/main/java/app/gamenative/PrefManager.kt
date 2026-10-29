@@ -402,7 +402,8 @@ object PrefManager {
 
     private val PERFORMANCE_HUD_COMPACT_MODE = booleanPreferencesKey("performance_hud_compact_mode")
     var performanceHudCompactMode: Boolean
-        get() = getPref(PERFORMANCE_HUD_COMPACT_MODE, false)
+        // Vapor: compact one-line HUD by default; the tall stacked box covered LT/LB and the D-pad.
+        get() = getPref(PERFORMANCE_HUD_COMPACT_MODE, true)
         set(value) {
             setPref(PERFORMANCE_HUD_COMPACT_MODE, value)
         }
